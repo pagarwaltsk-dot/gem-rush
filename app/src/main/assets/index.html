@@ -331,14 +331,28 @@ let role=null;      // 'host' | 'client'
 let hubWS=null,clientWS=null,clientAddr=null,reconnectTimer=0;
 
 /* ================= HOST ENGINE (runs only on the host phone) ================= */
-const E={players:[],gems:[],setNo:0,setStart:0,active:false,autoDone:false,timers:[],tick:0,running:false};
+const E={players:[],gems:[],setNo:0,setStart:0,active:false,autoDone:false,timers:[],tick:0,running:false,game:0,phase:'lobby',rank:[],tie:false};
 const later=(fn,ms)=>{const t=setTimeout(fn,ms);E.timers.push(t);return t};
 function newPlayer(id,name,kind){return {id,name,kind,score:0,time:0,log:[],gem:null,done:false,last:0,away:false}}
 function hostSend(p,m){
   if(p.kind==='local')ui(m);
   else if(p.kind==='remote'&&!p.away&&hubWS&&hubWS.readyState===1)hubWS.send(JSON.stringify({to:p.id,data:m}));
 }
-const bcast=m=>E.players.forEach(p=>hostSend(p,m));
+/* one message to everyone (local player directly, remote players in a single network message) */
+function bcast(m){
+  E.players.forEach(p=>{if(p.kind==='local')ui(m)});
+  if(E.players.some(p=>p.kind==='remote'&&!p.away)&&hubWS&&hubWS.readyState===1)hubWS.send(JSON.stringify({to:'all',data:m}));
+}
+/* full picture of the game; sent every second so a phone that missed a message catches up */
+function stateMsg(){
+  const m={t:'state',g:E.game,phase:E.phase,n:E.setNo,of:SETS,el:Math.round(performance.now()-E.setStart),
+    gems:E.gems.map(g=>({lane:g.lane,lv:g.lv,cat:g.q[0],owner:g.owner,name:(E.players.find(p=>p.id===g.owner)||{}).name||'',gone:!!g.gone})),
+    players:scoreMsg().players};
+  if(E.phase==='end'){m.rank=E.rank;m.tie=E.tie}
+  return m;
+}
+function sendState(){if(E.phase&&E.phase!=='lobby')bcast(stateMsg())}
+setInterval(()=>{if(role!=='host'||!hubWS)return;if(E.phase==='lobby')bcast(lobbyMsg());else sendState()},1000);
 function lobbyMsg(){return {t:'lobby',players:E.players.map(p=>({id:p.id,name:p.name,kind:p.kind,away:p.away}))}}
 function scoreMsg(){return {t:'score',players:E.players.map(p=>({id:p.id,name:p.name,score:p.score,log:p.log,away:p.away,
   st:p.away?'offline':!p.gem?'choosing':p.done?'done':'answering '+p.gem.lv}))}}
@@ -351,7 +365,7 @@ function onHub(raw){
   let m;try{m=JSON.parse(raw)}catch(e){return}
   if(m.t==='_join'){
     let p=E.players.find(x=>x.id===m.id);
-    if(p){p.away=false;p.name=m.name||p.name;hostSend(p,lobbyMsg());if(E.running){hostSend(p,{t:'sync',setNo:E.setNo});hostSend(p,scoreMsg())}}
+    if(p){p.away=false;p.name=m.name||p.name;hostSend(p,lobbyMsg());if(E.running)hostSend(p,stateMsg())}
     else if(E.running){hubWS.send(JSON.stringify({to:m.id,data:{t:'busy'}}));return}
     else if(E.players.filter(x=>x.kind!=='bot').length>=MAXP){hubWS.send(JSON.stringify({to:m.id,data:{t:'full'}}));return}
     else{p=newPlayer(m.id,(m.name||'Player').slice(0,12),'remote');E.players.push(p);buzz(25)}
@@ -365,13 +379,14 @@ function onHub(raw){
     const p=E.players.find(x=>x.id===m.from);if(!p)return;const d=m.data||{};
     if(d.t==='claim')claim(p,d.lane,false);
     else if(d.t==='ans')answer(p,d.i);
+    else if(d.t==='needq'){if(p.gem&&!p.done&&p.qMsg)hostSend(p,p.qMsg);else if(p.resMsg)hostSend(p,p.resMsg)}
   }
 }
 function setHostMode(m){
   $('#room-box').hidden=m!=='online';$('#share-row').hidden=m!=='online';$('#addr-box').hidden=m==='online';
 }
 async function startHosting(){
-  role='host';show('s-host');setHostMode('hotspot');
+  role='host';E.phase='lobby';show('s-host');setHostMode('hotspot');
   E.players=[newPlayer(myPid,myName(),'local')];E.running=false;renderHostList();
   $('#qr').innerHTML='<div class="spin"></div>';$('#host-addr').textContent='…';
   if(NATIVE){
@@ -406,6 +421,7 @@ function drawQR(text){
   catch(e){$('#qr').textContent='QR unavailable: use the address below'}
 }
 function stopHosting(){
+  E.phase='lobby';
   try{hubWS&&hubWS.close()}catch(e){}hubWS=null;
   if(NATIVE){try{NATIVE.stopHost()}catch(e){}}
   E.timers.forEach(clearTimeout);E.timers=[];E.running=false;E.active=false;role=null;
@@ -416,16 +432,16 @@ function startGameHost(solo){
   if(solo||$('#fill').checked){const names=['Asha','Rohan','Meera'].filter(n=>!E.players.some(p=>p.name===n));
     while(E.players.length<MAXP){const b=newPlayer('bot'+E.players.length,names.shift(),'bot');b.risk=E.players.length%2?.7:.25;E.players.push(b)}}
   E.players.forEach(p=>Object.assign(p,{score:0,time:0,log:[],gem:null,done:false,last:0}));
-  hist.round++;saveHist();E.setNo=0;E.running=true;
+  hist.round++;saveHist();E.setNo=0;E.running=true;E.game++;
   bcast(lobbyMsg());nextSet();
 }
 function nextSet(){
   E.setNo++;E.autoDone=false;
   E.players.forEach(p=>{p.gem=null;p.done=false;p.last=0;p.claimAt=3000+Math.random()*4500});
   E.gems=LV.map((lv,lane)=>{const {id,q}=pickQ(lv);return {lv,lane,id,q,owner:null}});saveHist();
-  E.setStart=performance.now();E.active=true;
-  bcast({t:'set',n:E.setNo,of:SETS,gems:E.gems.map(g=>({lane:g.lane,lv:g.lv,cat:g.q[0]}))});
-  bcast(scoreMsg());
+  E.setStart=performance.now();E.active=true;E.phase='play';
+  bcast({t:'set',g:E.game,n:E.setNo,of:SETS,el:0,gems:E.gems.map(g=>({lane:g.lane,lv:g.lv,cat:g.q[0]}))});
+  sendState();
 }
 function hostTick(){
   if(role!=='host'||!E.active)return;
@@ -438,16 +454,17 @@ function claim(p,lane,auto){
   const g=E.gems[lane];
   if(!E.active||!g||g.owner!==null||p.gem||p.away){if(p.kind!=='bot'&&!p.gem)hostSend(p,{t:'nope',lane});return false}
   g.owner=p.id;p.gem=g;
-  bcast({t:'claim',lane,id:p.id,name:p.name,auto:!!auto});
+  bcast({t:'claim',g:E.game,n:E.setNo,lane,id:p.id,name:p.name,auto:!!auto});
   if(p.kind==='bot'){
     const acc={1:.85,3:.62,5:.42}[g.lv],tt=2500+Math.random()*10500;
     later(()=>record(p,Math.random()<acc?g.lv:-g.lv,tt/1000),tt);
   }else{
     const opts=g.q.slice(2);p.order=shuffle(opts);p.correct=opts[0];p.qAt=performance.now();
-    hostSend(p,{t:'q',lane,lv:g.lv,cat:g.q[0],text:g.q[1],opts:p.order,auto:!!auto});
+    p.qMsg={t:'q',g:E.game,n:E.setNo,lane,lv:g.lv,cat:g.q[0],text:g.q[1],opts:p.order,auto:!!auto};p.resMsg=null;
+    hostSend(p,p.qMsg);
     p.qTimer=later(()=>answer(p,-1),(QTIME+LOCK)*1000+(p.kind==='remote'?2500:400));
   }
-  bcast(scoreMsg());return true;
+  sendState();return true;
 }
 function botClaim(p){
   const free=E.gems.filter(g=>g.owner===null).sort((a,b)=>b.lv-a.lv);
@@ -457,19 +474,22 @@ function botClaim(p){
 function autoAssign(){
   E.players.filter(p=>!p.gem&&!p.away).forEach(p=>{const free=E.gems.filter(g=>g.owner===null);
     if(free.length)claim(p,free[Math.floor(Math.random()*free.length)].lane,true)});
-  E.gems.filter(g=>g.owner===null).forEach(g=>bcast({t:'gone',lane:g.lane}));
+  E.gems.filter(g=>g.owner===null).forEach(g=>{g.gone=true;bcast({t:'gone',g:E.game,n:E.setNo,lane:g.lane})});
+  sendState();
 }
 function answer(p,i){
-  if(!p.gem||p.done||p.kind==='bot')return;
+  if(p.kind==='bot'||!p.gem)return;
+  if(p.done){if(p.resMsg)hostSend(p,p.resMsg);return}  // repeated answer: just send the result again
   clearTimeout(p.qTimer);
   const ok=i>=0&&p.order[i]===p.correct,lv=p.gem.lv;
   const secs=Math.min(Math.max((performance.now()-p.qAt)/1000-LOCK,0),QTIME);
-  hostSend(p,{t:'res',ok,pts:ok?lv:-lv,correct:p.correct,i});
+  p.resMsg={t:'res',g:E.game,n:E.setNo,ok,pts:ok?lv:-lv,correct:p.correct,i};
+  hostSend(p,p.resMsg);
   record(p,ok?lv:-lv,secs);
 }
 function record(p,pts,secs,silent){
   if(p.done)return;p.done=true;p.score+=pts;p.time+=secs;p.log.push(pts);p.last=pts;
-  bcast(scoreMsg());checkSetDone();
+  sendState();checkSetDone();
 }
 function checkSetDone(){
   if(!E.active)return;
@@ -477,16 +497,17 @@ function checkSetDone(){
   if(live.every(p=>p.done)||(E.autoDone&&live.every(p=>p.done||!p.gem)))endSet();
 }
 function endSet(){
-  E.active=false;
+  E.active=false;E.phase='between';
   E.players.filter(p=>!p.done).forEach(p=>{p.done=true;p.log.push(0);p.last=0});
-  bcast({t:'setEnd',res:E.players.map(p=>({name:p.name,pts:p.last}))});
+  bcast({t:'setEnd',g:E.game,n:E.setNo,res:E.players.map(p=>({name:p.name,pts:p.last}))});sendState();
   later(()=>{if(E.setNo>=SETS)endGame();else nextSet()},4200);
 }
 function endGame(){
-  E.running=false;
+  E.running=false;E.phase='end';
   const rank=[...E.players].sort((a,b)=>b.score-a.score||a.time-b.time);
-  bcast({t:'end',tie:rank.length>1&&rank[0].score===rank[1].score,
-    rank:rank.map(p=>({id:p.id,name:p.name,score:p.score,time:+p.time.toFixed(1),log:p.log}))});
+  E.tie=rank.length>1&&rank[0].score===rank[1].score;
+  E.rank=rank.map(p=>({id:p.id,name:p.name,score:p.score,time:+p.time.toFixed(1),log:p.log}));
+  bcast({t:'end',g:E.game,tie:E.tie,rank:E.rank});
   $('#fresh').textContent=`Unseen questions left: ${LV.map(lv=>`${freshCount(lv)} of ${BANK[lv].length} (${lv}-point)`).join(', ')}. A question doesn't come back for ${NOREPEAT} rounds while unseen ones remain.`;
 }
 
@@ -502,7 +523,7 @@ const newCode=()=>Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Ma
 const playURL=code=>(location.protocol.startsWith('http')?location.origin+location.pathname:SITE+'/play/')+'#join-'+code;
 function roomChannel(client,code){return client.channel('gemrush-'+code,{config:{broadcast:{self:false},presence:{key:myPid}}})}
 function hostOnline(){
-  role='host';show('s-host');setHostMode('online');
+  role='host';E.phase='lobby';show('s-host');setHostMode('online');
   E.players=[newPlayer(myPid,myName(),'local')];E.running=false;renderHostList();
   let client;
   try{client=sbClient()}catch(e){$('#host-sub').textContent=e.message+' You can still play against the computer.';$('#qr').textContent='Offline';return}
@@ -532,20 +553,23 @@ function joinOnline(raw){
   if(code.length!==4){joinMsg('A room code has 4 letters or numbers.',true);return}
   let client;try{client=sbClient()}catch(e){joinMsg(e.message,true);return}
   leaveClient();myName();joinMsg('Joining room '+code+'…');$('#join-wait').hidden=true;
-  const ch=roomChannel(client,code);let gotLobby=false;
+  const ch=roomChannel(client,code);let gotLobby=false,inRoom=false;
   const fake={readyState:0,onmessage:null,
     send(str){try{ch.send({type:'broadcast',event:'up',payload:{k:'msg',from:myPid,data:JSON.parse(str)}})}catch(e){}},
     close(){fake.readyState=3;try{client.removeChannel(ch)}catch(e){}}};
   ch.on('broadcast',{event:'down'},({payload:p})=>{
     if(clientWS!==fake||!p||(p.to!==myPid&&p.to!=='all'))return;
-    if(p.data&&p.data.t==='lobby')gotLobby=true;
+    if(p.data&&p.data.t==='lobby'){gotLobby=true;if((p.data.players||[]).some(x=>x.id===myPid))inRoom=true}
+    if(p.data&&p.data.t==='state')inRoom=true;
     ui(p.data);
   });
   ch.subscribe(st=>{
     if(st==='SUBSCRIBED'){
       fake.readyState=1;clientWS=fake;role='client';
       try{ch.track({id:myPid,name:myName()})}catch(e){}
-      ch.send({type:'broadcast',event:'up',payload:{k:'join',from:myPid,name:myName()}});
+      let n=0;const hello=()=>{if(clientWS!==fake||inRoom||n++>8)return;
+        ch.send({type:'broadcast',event:'up',payload:{k:'join',from:myPid,name:myName()}});setTimeout(hello,1500)};
+      hello();
       setTimeout(()=>{if(!gotLobby&&clientWS===fake){joinMsg('No game found with code '+code+'. Check the code with the host.',true);leaveClient()}},8000);
     }else if((st==='CHANNEL_ERROR'||st==='TIMED_OUT')&&!gotLobby)joinMsg('Could not connect. Check your internet.',true);
   });
@@ -607,7 +631,22 @@ function sendToHost(m){
 }
 
 /* ================= SHARED UI (driven by messages) ================= */
-let view={gems:[],start:0,active:false,pending:-1,mine:false,players:[]};
+let view={gems:[],start:0,active:false,pending:-1,mine:false,players:[],game:-1,setNo:-1,ended:-1,answered:false,mineAt:0};
+/* bring this phone in line with the host's picture of the game */
+function applyState(m){
+  if(m.players){view.players=m.players;renderChips()}
+  if(m.phase==='end'){if(m.rank&&view.ended!==m.g){view.ended=m.g;onEnd(m)}return}
+  if(m.g!==view.game||m.n!==view.setNo){
+    if(m.phase==='play'&&m.el<FALL+3000)startSetView({g:m.g,n:m.n,of:m.of,el:m.el,gems:m.gems});
+    else{view.game=m.g;view.setNo=m.n}
+    if(view.setNo!==m.n)return;
+  }
+  m.gems.forEach(s=>{const g=view.gems[s.lane];if(!g)return;
+    if(s.owner&&g.owner!==s.owner)onClaimView({lane:s.lane,id:s.owner,name:s.name});
+    else if(s.gone&&g.owner===null&&!g.gone)fadeGem(g)});
+  const mine=m.gems.find(s=>s.owner===myPid);
+  if(mine&&m.phase==='play'&&!qState&&!view.answered&&performance.now()-view.mineAt>1200&&role==='client')sendToHost({t:'needq'});
+}
 function ui(m){
   switch(m.t){
     case 'lobby':
@@ -617,22 +656,24 @@ function ui(m){
     case 'full':joinMsg('This room already has 3 players.',true);leaveClient();break;
     case 'busy':joinMsg('A game is already running. Wait for it to finish.',true);leaveClient();break;
     case 'sync':show('game');status('Back in! You\'ll play from the next set.');break;
-    case 'set':startSetView(m);break;
-    case 'claim':onClaimView(m);break;
+    case 'set':if(m.g!==view.game||m.n!==view.setNo)startSetView(m);break;
+    case 'claim':if(m.g===view.game&&m.n===view.setNo)onClaimView(m);break;
     case 'nope':if(view.pending===m.lane)view.pending=-1;break;
-    case 'gone':{const g=view.gems[m.lane];if(g)fadeGem(g);break}
-    case 'q':openQ(m);break;
+    case 'gone':{if(m.g!==view.game||m.n!==view.setNo)break;const g=view.gems[m.lane];if(g&&g.owner===null)fadeGem(g);break}
+    case 'q':if(m.g===view.game&&m.n===view.setNo&&!(qState&&qState.lane===m.lane))openQ(m);break;
     case 'res':showRes(m);break;
+    case 'state':applyState(m);break;
     case 'score':view.players=m.players;renderChips();break;
     case 'setEnd':onSetEnd(m);break;
-    case 'end':onEnd(m);break;
+    case 'end':if(view.ended!==m.g){view.ended=m.g;onEnd(m)}break;
   }
 }
 function status(t){$('#status').textContent=t;$('#status').hidden=!t}
 function startSetView(m){
   show('game');$('#qmodal').hidden=true;
   view.gems.forEach(g=>g.el.remove());
-  view={...view,active:true,pending:-1,mine:false,start:performance.now()};
+  if(qState){clearInterval(qState.iv);clearTimeout(qState.retry);qState=null}
+  view={...view,active:true,pending:-1,mine:false,answered:false,mineAt:0,game:m.g,setNo:m.n,start:performance.now()-(m.el||0)};
   tilt.base=tilt.beta;tilt.lane=-1;aim(-1);
   $('#setno').textContent=`Set ${m.n} of ${m.of}`;
   view.gems=m.gems.map(d=>{
@@ -653,7 +694,7 @@ function tapGem(g){
 }
 function onClaimView(m){
   const g=view.gems[m.lane];if(!g)return;g.owner=m.id;
-  if(m.id===myPid){view.mine=true;view.pending=-1;aim(-1);buzz(40);shatter(g)}
+  if(m.id===myPid){view.mine=true;view.mineAt=performance.now();view.pending=-1;aim(-1);buzz(40);shatter(g)}
   else{
     if(view.pending===m.lane)view.pending=-1;
     g.el.classList.add('taken');g.el.querySelector('.tag').textContent=m.name+' took it';
@@ -703,7 +744,7 @@ function openQ(m){
   box.classList.add('lock');
   const fd=$('#qfeed');fd.textContent='Get ready…';fd.className='feed';
   $('#qmodal').hidden=false;
-  const q=qState={over:false,opts:m.opts,lv:m.lv,iv:0,t0:0};
+  const q=qState={over:false,opts:m.opts,lv:m.lv,iv:0,t0:0,lane:m.lane,retry:0};
   ring(QTIME);
   setTimeout(()=>{if(q!==qState||q.over)return;box.classList.remove('lock');fd.textContent='';q.t0=performance.now();
     q.iv=setInterval(()=>{const left=QTIME-(performance.now()-q.t0)/1000;ring(left);if(left<=0)pick(-1)},100)},LOCK*1000);
@@ -714,10 +755,12 @@ function pick(i){
   const q=qState;if(!q||q.over)return;q.over=true;clearInterval(q.iv);
   [...$('#qopts').children].forEach((b,k)=>{b.disabled=true;if(k===i)b.style.borderColor='var(--gold)'});
   $('#qfeed').textContent=i<0?'Time up…':'Checking…';
-  sendToHost({t:'ans',i});
+  view.answered=true;sendToHost({t:'ans',i});
+  let tries=0;const again=()=>{if(qState!==q||q.got||role!=='client'||tries++>=4)return;sendToHost({t:'ans',i});q.retry=setTimeout(again,2000)};
+  q.retry=setTimeout(again,2000);
 }
 function showRes(m){
-  const q=qState;if(q){q.over=true;clearInterval(q.iv)}
+  const q=qState;if(!q||q.got)return;q.got=true;q.over=true;clearInterval(q.iv);clearTimeout(q.retry);view.answered=true;
   [...$('#qopts').children].forEach((b,k)=>{b.disabled=true;b.style.borderColor='';
     if(q&&q.opts[k]===m.correct)b.classList.add('right');else if(k===m.i)b.classList.add('wrong')});
   const fd=$('#qfeed'),lv=Math.abs(m.pts);
