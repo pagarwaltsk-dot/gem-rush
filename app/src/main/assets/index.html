@@ -45,6 +45,11 @@ input[type=text]{width:100%;min-height:50px;border-radius:14px;border:2px solid 
 #qr{background:#fff;padding:10px;border-radius:14px;width:230px;height:230px;display:grid;place-items:center;color:#1a0f42;font:800 16px var(--hd);text-align:center}
 #qr svg{width:100%;height:100%}
 .addr{font:800 22px var(--hd);color:var(--gold)}
+.code{font:800 48px/1 var(--hd);letter-spacing:8px;color:var(--gold);text-align:center}
+.codein{text-transform:uppercase;letter-spacing:6px;font:800 24px var(--hd)!important;text-align:center}
+.big.wa{background:#25d366;color:#05300f;display:grid;place-items:center;text-decoration:none;font-size:19px}
+a.lnk{display:grid;place-items:center;text-decoration:none;color:var(--mute)}
+summary{cursor:pointer;font-weight:700;color:var(--mute)}
 .list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .list li{display:flex;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.06)}
 .list .on{color:var(--good);font-weight:800}.list .wait{color:var(--mute)}
@@ -134,9 +139,11 @@ input[type=text]{width:100%;min-height:50px;border-radius:14px;border:2px solid 
       <label class="f" for="name">Your name</label>
       <input type="text" id="name" maxlength="12" placeholder="Type your name" autocomplete="off">
     </div>
-    <button class="big" id="b-host">Host a game</button>
+    <button class="big" id="b-online">Play online with friends</button>
     <button class="big alt" id="b-join">Join a game</button>
+    <button class="ghost" id="b-host">Host on hotspot (no internet)</button>
     <button class="ghost" id="b-solo">Practice against the computer</button>
+    <a class="ghost lnk" id="getapp" href="https://github.com/pagarwaltsk-dot/gem-rush/releases/latest/download/GemRush.apk" hidden>Get the Android app</a>
     <div class="panel">
       <h2>How to play</h2>
       <ol>
@@ -155,9 +162,10 @@ input[type=text]{width:100%;min-height:50px;border-radius:14px;border:2px solid 
     <p class="sub" id="host-sub">Starting…</p>
     <div class="panel qrbox">
       <div id="qr"><div class="spin"></div></div>
-      <p class="note" id="host-addr-l">Or type this address on the Join screen:</p>
-      <div class="addr" id="host-addr">…</div>
+      <div id="room-box" hidden><p class="note">Room code</p><div class="code" id="room-code">····</div></div>
+      <div id="addr-box"><p class="note">Or type this address on the Join screen:</p><div class="addr" id="host-addr">…</div></div>
     </div>
+    <div class="row" id="share-row" hidden><a class="big wa" id="b-wa" target="_blank" rel="noopener">Share on WhatsApp</a><button class="ghost" id="b-copy" style="flex:0 0 120px">Copy link</button></div>
     <ul class="list" id="host-list"></ul>
     <div class="panel switch"><span>Fill empty seats with computer players</span><input type="checkbox" id="fill" checked></div>
     <button class="ghost" id="b-tilt">Turn on tilt control</button>
@@ -169,12 +177,18 @@ input[type=text]{width:100%;min-height:50px;border-radius:14px;border:2px solid 
 <section class="screen" id="s-join" hidden>
   <div class="col">
     <h1 class="s">Join a game</h1>
-    <p class="sub">Scan the code on the host's phone. You'll be connected to their hotspot automatically. No internet needed.</p>
-    <button class="big alt" id="b-scan">Scan QR code</button>
+    <p class="sub">Type the room code from the host, or scan the QR code on the host's phone.</p>
     <div class="panel">
-      <label class="f" for="addr">Or type the host's address</label>
-      <div class="row"><input type="text" id="addr" placeholder="192.168.x.x" inputmode="decimal" autocomplete="off"><button class="ghost" id="b-connect" style="flex:0 0 110px">Connect</button></div>
+      <label class="f" for="jname">Your name</label>
+      <input type="text" id="jname" maxlength="12" placeholder="Type your name" autocomplete="off" style="margin-bottom:12px">
+      <label class="f" for="code">Room code</label>
+      <div class="row"><input type="text" id="code" class="codein" maxlength="4" placeholder="K7P2" autocomplete="off" autocapitalize="characters"><button class="big alt" id="b-code" style="flex:0 0 110px;min-height:50px;font-size:19px">Join</button></div>
     </div>
+    <button class="ghost" id="b-scan">Scan QR code</button>
+    <details class="panel">
+      <summary>Hotspot game without scanning? Type the host's address</summary>
+      <div class="row" style="margin-top:10px"><input type="text" id="addr" placeholder="192.168.x.x" inputmode="decimal" autocomplete="off"><button class="ghost" id="b-connect" style="flex:0 0 110px">Connect</button></div>
+    </details>
     <div id="join-spin" class="spin" hidden></div>
     <p class="msg" id="join-msg"></p>
     <div id="join-wait" hidden>
@@ -233,9 +247,13 @@ input[type=text]{width:100%;min-height:50px;border-radius:14px;border:2px solid 
 
 <script src="qrcode.js"></script>
 <script src="questions.js"></script>
+<script src="supabase.js"></script>
 <script>
 {
 /* ================= constants and setup ================= */
+/* online play: Supabase project (Project Settings > API) */
+const SB_URL='',SB_KEY='';
+const SITE='https://pagarwaltsk-dot.github.io/gem-rush';
 const LV=[1,3,5],SETS=5,FALL=9000,QTIME=15,LOCK=0.8,TAPS=3,NOREPEAT=30,PORT=8765,MAXP=3;
 const $=s=>document.querySelector(s);
 const NATIVE=window.Android||null;
@@ -243,8 +261,11 @@ const params=new URLSearchParams(location.search);
 const BANK={};for(const k of LV)BANK[k]=((window.QUESTIONS||{})[k]||'').trim().split('\n').filter(Boolean).map(l=>l.split('|'));
 const COL={1:{l:'#c8ffe8',m:'#34d99c',d:'#0b8a5f'},3:{l:'#d4ebff',m:'#4ba3ff',d:'#1c55c9'},5:{l:'#ffe2b0',m:'#ff7a3d',d:'#c9202c'}};
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const myPid=store.get('gemrush.pid',null)||('p'+Math.random().toString(36).slice(2,9));store.set('gemrush.pid',myPid);
+const myPid=params.get('pid')||store.get('gemrush.pid',null)||('p'+Math.random().toString(36).slice(2,9));store.set('gemrush.pid',myPid);
 $('#name').value=store.get('gemrush.name','');
+$('#jname').value=$('#name').value;
+$('#jname').oninput=()=>{$('#name').value=$('#jname').value};
+$('#name').oninput=()=>{$('#jname').value=$('#name').value};
 const myName=()=>{const n=$('#name').value.trim().slice(0,12)||'Player';store.set('gemrush.name',n);return n};
 const SCREENS=['s-start','s-host','s-join','game','s-end'];
 const show=id=>{SCREENS.forEach(s=>$('#'+s).hidden=s!==id);if(id!=='game')$('#qmodal').hidden=true};
@@ -346,8 +367,11 @@ function onHub(raw){
     else if(d.t==='ans')answer(p,d.i);
   }
 }
+function setHostMode(m){
+  $('#room-box').hidden=m!=='online';$('#share-row').hidden=m!=='online';$('#addr-box').hidden=m==='online';
+}
 async function startHosting(){
-  role='host';show('s-host');
+  role='host';show('s-host');setHostMode('hotspot');
   E.players=[newPlayer(myPid,myName(),'local')];E.running=false;renderHostList();
   $('#qr').innerHTML='<div class="spin"></div>';$('#host-addr').textContent='…';
   if(NATIVE){
@@ -466,6 +490,72 @@ function endGame(){
   $('#fresh').textContent=`Unseen questions left: ${LV.map(lv=>`${freshCount(lv)} of ${BANK[lv].length} (${lv}-point)`).join(', ')}. A question doesn't come back for ${NOREPEAT} rounds while unseen ones remain.`;
 }
 
+
+/* ================= ONLINE PLAY (Supabase Realtime as the meeting point) ================= */
+let sb=null,roomCode='';
+function sbClient(){
+  if(!window.supabase||(!SB_URL&&!window.supabase.__mock))throw new Error('Online play is not switched on yet.');
+  if(!sb)sb=window.supabase.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40}}});
+  return sb;
+}
+const newCode=()=>Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
+const playURL=code=>(location.protocol.startsWith('http')?location.origin+location.pathname:SITE+'/play/')+'#join-'+code;
+function roomChannel(client,code){return client.channel('gemrush-'+code,{config:{broadcast:{self:false},presence:{key:myPid}}})}
+function hostOnline(){
+  role='host';show('s-host');setHostMode('online');
+  E.players=[newPlayer(myPid,myName(),'local')];E.running=false;renderHostList();
+  let client;
+  try{client=sbClient()}catch(e){$('#host-sub').textContent=e.message+' You can still play against the computer.';$('#qr').textContent='Offline';return}
+  const code=roomCode=newCode(),url=playURL(code);
+  $('#room-code').textContent=code;drawQR(url);
+  $('#b-wa').href='https://wa.me/?text='+encodeURIComponent(`Join my Gem Rush quiz game! Room code: ${code}\n${url}`);
+  $('#host-sub').textContent='Opening your room…';
+  const ch=roomChannel(client,code);
+  const fake={readyState:0,ch,
+    send(str){try{ch.send({type:'broadcast',event:'down',payload:JSON.parse(str)})}catch(e){}},
+    close(){fake.readyState=3;try{client.removeChannel(ch)}catch(e){}}};
+  ch.on('broadcast',{event:'up'},({payload:p})=>{
+    if(!p||!p.from||hubWS!==fake)return;
+    if(p.k==='join')onHub(JSON.stringify({t:'_join',id:p.from,name:p.name}));
+    else if(p.k==='msg')onHub(JSON.stringify({t:'_msg',from:p.from,data:p.data}));
+  });
+  ch.on('presence',{event:'leave'},({leftPresences})=>(leftPresences||[]).forEach(x=>{
+    if(x&&x.id&&x.id!==myPid&&hubWS===fake)onHub(JSON.stringify({t:'_leave',id:x.id}))}));
+  ch.subscribe(st=>{
+    if(st==='SUBSCRIBED'){fake.readyState=1;hubWS=fake;try{ch.track({id:myPid,host:true})}catch(e){}
+      $('#host-sub').textContent='Share the code or the link. Friends can join from anywhere, in the app or a browser.'}
+    else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')$('#host-sub').textContent='Connection problem. Check your internet. Retrying…';
+  });
+}
+function joinOnline(raw){
+  const code=String(raw||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(code.length!==4){joinMsg('A room code has 4 letters or numbers.',true);return}
+  let client;try{client=sbClient()}catch(e){joinMsg(e.message,true);return}
+  leaveClient();myName();joinMsg('Joining room '+code+'…');$('#join-wait').hidden=true;
+  const ch=roomChannel(client,code);let gotLobby=false;
+  const fake={readyState:0,onmessage:null,
+    send(str){try{ch.send({type:'broadcast',event:'up',payload:{k:'msg',from:myPid,data:JSON.parse(str)}})}catch(e){}},
+    close(){fake.readyState=3;try{client.removeChannel(ch)}catch(e){}}};
+  ch.on('broadcast',{event:'down'},({payload:p})=>{
+    if(clientWS!==fake||!p||(p.to!==myPid&&p.to!=='all'))return;
+    if(p.data&&p.data.t==='lobby')gotLobby=true;
+    ui(p.data);
+  });
+  ch.subscribe(st=>{
+    if(st==='SUBSCRIBED'){
+      fake.readyState=1;clientWS=fake;role='client';
+      try{ch.track({id:myPid,name:myName()})}catch(e){}
+      ch.send({type:'broadcast',event:'up',payload:{k:'join',from:myPid,name:myName()}});
+      setTimeout(()=>{if(!gotLobby&&clientWS===fake){joinMsg('No game found with code '+code+'. Check the code with the host.',true);leaveClient()}},8000);
+    }else if((st==='CHANNEL_ERROR'||st==='TIMED_OUT')&&!gotLobby)joinMsg('Could not connect. Check your internet.',true);
+  });
+}
+$('#b-code').onclick=()=>joinOnline($('#code').value);
+$('#code').onkeydown=e=>{if(e.key==='Enter')joinOnline($('#code').value)};
+$('#b-copy').onclick=async()=>{const u=playURL(roomCode);
+  try{await navigator.clipboard.writeText(u);$('#b-copy').textContent='Copied!'}catch(e){$('#b-copy').textContent='Copy failed'}
+  setTimeout(()=>$('#b-copy').textContent='Copy link',1800)};
+
 /* ================= CLIENT (joining phone) ================= */
 function joinMsg(t,err){$('#join-msg').textContent=t;$('#join-msg').className='msg'+(err?' err':'');$('#join-spin').hidden=!!err||!t}
 async function connectClient(addr,quiet){
@@ -486,6 +576,7 @@ function scheduleReconnect(){
 }
 function leaveClient(){role=null;clearTimeout(reconnectTimer);try{clientWS&&clientWS.close()}catch(e){}clientWS=null}
 async function joinFromScan(text){
+  const om=/#join-([A-Za-z0-9]{4})/.exec(text||'');if(om){$('#code').value=om[1].toUpperCase();joinOnline(om[1]);return}
   let info;try{info=JSON.parse(text)}catch(e){}
   if(!info||info.g!=='GR1'){joinMsg('That is not a Gem Rush code. Try again.',true);return}
   const port=info.o||PORT;
@@ -504,7 +595,7 @@ nativeH.scan=d=>{if(d&&d.text)joinFromScan(d.text);else joinMsg('')};
 $('#b-scan').onclick=()=>{
   myName();
   if(NATIVE){joinMsg('Opening camera…');try{NATIVE.scan()}catch(e){joinMsg('Camera not available',true)}}
-  else joinMsg('Scanning works in the Gem Rush app. Here, type the host\'s address instead.',true);
+  else joinMsg('Here, type the room code instead (or scan the host\'s QR with your phone camera).',true);
 };
 $('#b-connect').onclick=async()=>{
   const a=$('#addr').value.trim();if(!a){joinMsg('Type the address shown on the host\'s phone.',true);return}
@@ -660,6 +751,7 @@ function onEnd(m){
 
 /* ================= buttons ================= */
 $('#b-host').onclick=()=>{myName();startHosting()};
+$('#b-online').onclick=()=>{myName();hostOnline()};
 $('#b-solo').onclick=()=>{myName();role='host';E.players=[newPlayer(myPid,myName(),'local')];startGameHost(true)};
 $('#b-join').onclick=()=>{myName();show('s-join');joinMsg('');$('#join-wait').hidden=true};
 $('#b-start').onclick=()=>startGameHost(false);
@@ -668,6 +760,13 @@ $('#b-host-back').onclick=()=>{stopHosting();show('s-start')};
 $('#b-join-back').onclick=()=>{leaveClient();show('s-start')};
 $('#b-home').onclick=()=>{if(role==='host')stopHosting();else leaveClient();show('s-start')};
 if(params.get('join')){show('s-join');$('#addr').value=params.get('join')}
+if(!NATIVE&&!/android-app/.test(location.search))$('#getapp').hidden=false;
+function hashJoin(){
+  const hj=/^#join-([A-Za-z0-9]{4})$/.exec(location.hash);if(!hj||role)return;
+  show('s-join');$('#code').value=hj[1].toUpperCase();
+  joinMsg("Type your name and tap Join to enter room "+hj[1].toUpperCase()+".");$("#join-spin").hidden=true;
+}
+hashJoin();addEventListener('hashchange',hashJoin);
 if(params.get('name'))$('#name').value=params.get('name');
 }
 </script>

@@ -3,6 +3,7 @@ package com.gemrush.quiz
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -27,6 +28,7 @@ import android.os.VibratorManager
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.result.contract.ActivityResultContracts
@@ -85,8 +87,31 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         web.settings.domStorageEnabled = true
         web.settings.allowFileAccess = true
         web.settings.mediaPlaybackRequiresUserGesture = false
-        web.webViewClient = WebViewClient()
-        web.webChromeClient = WebChromeClient()
+        web.webViewClient = object : WebViewClient() {
+            // Links to websites and WhatsApp open outside the app; the game itself stays inside
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                val url = request.url
+                if (url.scheme == "file") return false
+                return try {
+                    startActivity(Intent(Intent.ACTION_VIEW, url))
+                    true
+                } catch (_: Exception) {
+                    true
+                }
+            }
+        }
+        web.webChromeClient = object : WebChromeClient() {
+            // target="_blank" links (e.g. Share on WhatsApp) arrive here
+            override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: android.os.Message): Boolean {
+                val href = view.hitTestResult.extra ?: return false
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(href)))
+                } catch (_: Exception) {
+                }
+                return false
+            }
+        }
+        web.settings.setSupportMultipleWindows(true)
         web.addJavascriptInterface(Bridge(), "Android")
         setContentView(web)
         web.loadUrl("file:///android_asset/index.html")
