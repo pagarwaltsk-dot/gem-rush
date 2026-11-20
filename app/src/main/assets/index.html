@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Gem Rush Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: playful arcade, school-demo energy, readable under pressure
+   IDEA: a night-sky meteor shower where every falling meteor is a crystal gem holding a locked question
+   PICTURE: three faceted gems (green 1, blue 3, ember 5) falling with glowing tails; taps crack them, the claim shatters them
+   COLOUR and TYPE: indigo night ground, gem colours as the only hues, gold accent; Baloo 2 for numbers and titles, Nunito for text
+   LAYOUT: phone-first full screen: scoreboard on top, sky in the middle, three lane pads at the bottom */
+:root{color-scheme:dark;--bg:#0c0824;--ink:#f4f1ff;--mute:#b7acdf;--card:#1e1650;--line:rgba(255,255,255,.13);--gold:#ffcf4a;--good:#34d99c;--bad:#ff5d6a;--hd:'Baloo 2',ui-rounded,'Arial Rounded MT Bold',system-ui,sans-serif}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+h1{font:800 clamp(40px,12vw,62px)/1 var(--hd);margin:0}
+h1.s{font-size:38px}
+.screen{position:fixed;inset:0;overflow:auto;background:radial-gradient(120% 70% at 50% 110%,#43207a 0,transparent 60%),linear-gradient(#0a0720,#1a0f42);display:flex;justify-content:center;padding:26px 18px 40px}
+.col{width:100%;max-width:440px;display:flex;flex-direction:column;gap:14px}
+.hero{display:flex;justify-content:center;align-items:flex-end;gap:14px;height:140px}
+.hero div{filter:drop-shadow(0 0 18px var(--glow))}
+.sub{color:var(--mute);margin:-4px 0 0}
+.panel{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:18px;padding:14px 16px}
+.panel h2{font:800 18px var(--hd);margin:0 0 6px}
+.panel ol{margin:0;padding-left:20px;color:var(--mute)}.panel li{margin:3px 0}
+label.f{display:block;font-weight:800;margin-bottom:6px}
+input[type=text]{width:100%;min-height:50px;border-radius:14px;border:2px solid var(--line);background:rgba(255,255,255,.07);padding:10px 14px;font-size:17px}
+.big{min-height:58px;border:0;border-radius:16px;background:var(--gold);color:#2a1a00;font:800 22px var(--hd);width:100%}
+.big.alt{background:#4ba3ff;color:#06163a}
+.big:disabled{opacity:.4;cursor:default}
+.ghost{min-height:48px;border-radius:14px;border:2px solid var(--line);background:transparent;font-weight:800;width:100%}
+.ghost.ok{border-color:var(--good);color:var(--good)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.note{font-size:13px;color:var(--mute);text-align:center;margin:0}
+.msg{font-weight:800;text-align:center;margin:0;min-height:24px}
+.msg.err{color:var(--bad)}
+.qrbox{display:grid;place-items:center;gap:8px}
+#qr{background:#fff;padding:10px;border-radius:14px;width:230px;height:230px;display:grid;place-items:center;color:#1a0f42;font:800 16px var(--hd);text-align:center}
+#qr svg{width:100%;height:100%}
+.addr{font:800 22px var(--hd);color:var(--gold)}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.list li{display:flex;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.06)}
+.list .on{color:var(--good);font-weight:800}.list .wait{color:var(--mute)}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:700}
+.switch input{width:24px;height:24px;accent-color:var(--gold)}
+.spin{width:44px;height:44px;border-radius:50%;border:5px solid var(--line);border-top-color:var(--gold);animation:sp 1s linear infinite;margin:10px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* game */
+#game{position:fixed;inset:0;display:flex;flex-direction:column}
+.top{padding:10px 10px 8px;background:#0a0720;border-bottom:1px solid var(--line)}
+.setno{font:800 15px var(--hd);color:var(--gold);text-align:center;margin-bottom:6px}
+#chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:6px}
+.chip{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:6px 8px;text-align:center}
+.chip.me{border-color:var(--gold)}
+.nm{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{font-size:13px;color:var(--mute);white-space:nowrap}
+.sc{font:800 26px/1.1 var(--hd)}
+.dots{display:flex;justify-content:center;gap:4px;margin-top:2px}
+.dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.18)}
+.dots i.up{background:var(--good)}.dots i.dn{background:var(--bad)}.dots i.z{background:var(--mute)}
+#sky{flex:1;position:relative;overflow:hidden;touch-action:none;background:radial-gradient(90% 50% at 50% 115%,#4a2283 0,transparent 70%),linear-gradient(#0c0824,#1c1048)}
+.lanebg{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);pointer-events:none}
+.lanebg i{border-inline:1px dashed rgba(255,255,255,.05)}
+.star{position:absolute;border-radius:50%;background:#fff;pointer-events:none}
+#status{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:5;background:rgba(10,7,32,.8);border:1px solid var(--line);padding:6px 14px;border-radius:99px;font-size:14px;font-weight:700;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
+.gem{position:absolute;top:0;width:var(--w);will-change:transform;touch-action:none;cursor:pointer;z-index:2}
+.lv1{--w:80px;--glow:rgba(52,217,156,.6)}.lv3{--w:94px;--glow:rgba(75,163,255,.6)}.lv5{--w:110px;--glow:rgba(255,110,61,.7)}
+.gem svg{display:block;width:100%;height:auto;filter:drop-shadow(0 0 14px var(--glow));animation:bob 1.4s ease-in-out infinite alternate;transition:transform .08s}
+.gem.hit svg{transform:scale(.9)}
+.tail{position:absolute;left:28%;right:28%;bottom:55%;height:150px;background:linear-gradient(to top,var(--glow),transparent);filter:blur(9px);border-radius:50%}
+.hint{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:3px;font:800 13px Nunito,system-ui,sans-serif;padding:2px 10px;border-radius:99px;background:rgba(255,255,255,.16);white-space:nowrap}
+.k{opacity:0;stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.t1 .k1,.t2 .k1,.t2 .k2{opacity:1}
+.tag{display:none;position:absolute;top:34%;left:50%;transform:translateX(-50%) rotate(-8deg);background:#fff;color:#1a0f42;font:800 14px var(--hd);padding:2px 9px;border-radius:7px;white-space:nowrap}
+.taken svg{opacity:.35;filter:grayscale(1)}.taken .tag{display:block}.taken .tail{display:none}
+.fade{opacity:0;transition:opacity .5s}
+.shard{position:absolute;width:18px;height:18px;margin:-9px;clip-path:polygon(50% 0,100% 100%,0 75%);animation:fly .8s ease-out forwards;pointer-events:none;z-index:3}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
+@keyframes bob{from{rotate:-5deg}to{rotate:5deg}}
+.lanes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px;background:#0a0720;border-top:1px solid var(--line)}
+.lane{text-align:center;border-radius:12px;padding:6px 4px;border:2px solid var(--line);transition:background .15s,border-color .15s}
+.lane b{display:block;font:800 22px/1.1 var(--hd)}
+.lane span{font-size:13px;color:var(--mute)}
+.lane.l1 b{color:#34d99c}.lane.l3 b{color:#4ba3ff}.lane.l5 b{color:#ff7a3d}
+.lane.aim{border-color:var(--gold);background:rgba(255,207,74,.14)}
+#toast{position:absolute;left:50%;bottom:16px;transform:translate(-50%,160%);transition:transform .3s;z-index:6;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 16px;display:flex;gap:16px;font-size:15px;white-space:nowrap}
+#toast.show{transform:translate(-50%,0)}
+#toast .p{color:var(--good);font-weight:800}#toast .n{color:var(--bad);font-weight:800}#toast .z{color:var(--mute);font-weight:800}
+/* question */
+#qmodal{position:fixed;inset:0;z-index:20;background:rgba(5,3,20,.75);display:grid;place-items:center;padding:12px}
+.card{width:100%;max-width:460px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.9);opacity:0}}
+.qhead{display:flex;align-items:center;gap:10px}
+.badge{font:800 15px var(--hd);padding:3px 12px;border-radius:99px;color:#0c0824}
+.badge.lv1{background:#34d99c}.badge.lv3{background:#4ba3ff}.badge.lv5{background:#ff7a3d}
+#qcat{color:var(--mute);font-size:14px;font-weight:700;flex:1}
+#qtimer{--p:1;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--gold) calc(var(--p)*360deg),rgba(255,255,255,.12) 0)}
+#qtimer span{width:42px;height:42px;border-radius:50%;background:var(--card);display:grid;place-items:center;font:800 20px var(--hd)}
+#qtext{font:700 19px/1.35 Nunito,system-ui,sans-serif;margin:14px 0 4px;text-wrap:balance}
+#qopts.lock{opacity:.35;pointer-events:none}
+.opt{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;margin-top:10px;padding:8px 14px;text-align:left;background:rgba(255,255,255,.07);border:2px solid var(--line);border-radius:14px;font-size:16px}
+.opt b{font:800 16px var(--hd);color:var(--gold)}
+.opt.right{background:#145d40;border-color:var(--good)}.opt.wrong{background:#6b1822;border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.feed{min-height:28px;margin-top:10px;text-align:center;font:800 20px var(--hd)}
+.feed.good{color:var(--good)}.feed.bad{color:var(--bad)}
+/* end */
+#rank{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+#rank li{display:grid;grid-template-columns:34px 1fr auto;grid-template-areas:"pos who tot" "pos log tot";align-items:center;column-gap:10px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid var(--line)}
+#rank li.me{border-color:var(--gold)}
+.pos{grid-area:pos;font:800 28px var(--hd);color:var(--gold)}
+.who{grid-area:who;font-weight:800}
+.log{grid-area:log;display:flex;gap:6px;flex-wrap:wrap}
+.log i{font-style:normal;font-weight:800;font-size:14px}.log .up{color:var(--good)}.log .dn{color:var(--bad)}.log .z{color:var(--mute)}
+.tot{grid-area:tot;font:800 32px var(--hd)}
+@media (prefers-reduced-motion:reduce){.gem svg{animation:none}.shard{display:none}.card{animation:none}}
+</style>
+</head>
+<body>
+
+<section class="screen" id="s-start">
+  <div class="col">
+    <div class="hero" id="hero"></div>
+    <h1>Gem Rush</h1>
+    <p class="sub">The quiz where questions fall from the sky. Grab one, answer it, risk your points.</p>
+    <div>
+      <label class="f" for="name">Your name</label>
+      <input type="text" id="name" maxlength="12" placeholder="Type your name" autocomplete="off">
+    </div>
+    <button class="big" id="b-host">Host a game</button>
+    <button class="big alt" id="b-join">Join a game</button>
+    <button class="ghost" id="b-solo">Practice against the computer</button>
+    <div class="panel">
+      <h2>How to play</h2>
+      <ol>
+        <li>Each set, 3 gems fall together: 1, 3 and 5 points. Each shows only its subject.</li>
+        <li>Grab one by tapping it 3 times, or tilt your phone: left = 1, back = 3, right = 5.</li>
+        <li>Once a gem is taken, nobody else can have it. Answer within 15 seconds.</li>
+        <li>Right answer: + points. Wrong or time up: − points. 5 sets per game.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="s-host" hidden>
+  <div class="col">
+    <h1 class="s">Your room</h1>
+    <p class="sub" id="host-sub">Starting…</p>
+    <div class="panel qrbox">
+      <div id="qr"><div class="spin"></div></div>
+      <p class="note" id="host-addr-l">Or type this address on the Join screen:</p>
+      <div class="addr" id="host-addr">…</div>
+    </div>
+    <ul class="list" id="host-list"></ul>
+    <div class="panel switch"><span>Fill empty seats with computer players</span><input type="checkbox" id="fill" checked></div>
+    <button class="ghost" id="b-tilt">Turn on tilt control</button>
+    <button class="big" id="b-start">Start game</button>
+    <button class="ghost" id="b-host-back">Cancel</button>
+  </div>
+</section>
+
+<section class="screen" id="s-join" hidden>
+  <div class="col">
+    <h1 class="s">Join a game</h1>
+    <p class="sub">Scan the code on the host's phone. You'll be connected to their hotspot automatically. No internet needed.</p>
+    <button class="big alt" id="b-scan">Scan QR code</button>
+    <div class="panel">
+      <label class="f" for="addr">Or type the host's address</label>
+      <div class="row"><input type="text" id="addr" placeholder="192.168.x.x" inputmode="decimal" autocomplete="off"><button class="ghost" id="b-connect" style="flex:0 0 110px">Connect</button></div>
+    </div>
+    <div id="join-spin" class="spin" hidden></div>
+    <p class="msg" id="join-msg"></p>
+    <div id="join-wait" hidden>
+      <ul class="list" id="join-list"></ul>
+      <p class="note" style="margin-top:10px">Waiting for the host to start…</p>
+    </div>
+    <button class="ghost" id="b-tilt2">Turn on tilt control</button>
+    <button class="ghost" id="b-join-back">Back</button>
+  </div>
+</section>
+
+<section id="game" hidden>
+  <div class="top">
+    <div class="setno" id="setno">Set 1 of 5</div>
+    <div id="chips"></div>
+  </div>
+  <div id="sky">
+    <div class="lanebg"><i></i><i></i><i></i></div>
+    <div id="status"></div>
+    <div id="toast"></div>
+  </div>
+  <div class="lanes">
+    <div class="lane l1"><b>1</b><span>tilt left</span></div>
+    <div class="lane l3"><b>3</b><span>tilt back</span></div>
+    <div class="lane l5"><b>5</b><span>tilt right</span></div>
+  </div>
+</section>
+
+<div id="qmodal" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="qtext">
+    <div class="qhead">
+      <span class="badge" id="qbadge">5 points</span>
+      <span id="qcat">Science</span>
+      <div id="qtimer"><span id="qsec">15</span></div>
+    </div>
+    <p id="qtext"></p>
+    <div id="qopts"></div>
+    <div class="feed" id="qfeed"></div>
+  </div>
+</div>
+
+<section class="screen" id="s-end" hidden>
+  <div class="col">
+    <h1 class="s" id="winner">Game over</h1>
+    <p class="sub" id="tienote"></p>
+    <ol id="rank"></ol>
+    <div class="panel" id="bankinfo" hidden>
+      <h2>Question bank</h2>
+      <p class="note" style="text-align:left" id="fresh"></p>
+    </div>
+    <button class="big" id="b-again" hidden>Play again</button>
+    <p class="msg" id="end-wait" hidden>Waiting for the host to start the next game…</p>
+    <button class="ghost" id="b-home">Back to start</button>
+  </div>
+</section>
+
+<script src="qrcode.js"></script>
+<script src="questions.js"></script>
+<script>
+{
+/* ================= constants and setup ================= */
+const LV=[1,3,5],SETS=5,FALL=9000,QTIME=15,LOCK=0.8,TAPS=3,NOREPEAT=30,PORT=8765,MAXP=3;
+const $=s=>document.querySelector(s);
+const NATIVE=window.Android||null;
+const params=new URLSearchParams(location.search);
+const BANK={};for(const k of LV)BANK[k]=((window.QUESTIONS||{})[k]||'').trim().split('\n').filter(Boolean).map(l=>l.split('|'));
+const COL={1:{l:'#c8ffe8',m:'#34d99c',d:'#0b8a5f'},3:{l:'#d4ebff',m:'#4ba3ff',d:'#1c55c9'},5:{l:'#ffe2b0',m:'#ff7a3d',d:'#c9202c'}};
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const myPid=store.get('gemrush.pid',null)||('p'+Math.random().toString(36).slice(2,9));store.set('gemrush.pid',myPid);
+$('#name').value=store.get('gemrush.name','');
+const myName=()=>{const n=$('#name').value.trim().slice(0,12)||'Player';store.set('gemrush.name',n);return n};
+const SCREENS=['s-start','s-host','s-join','game','s-end'];
+const show=id=>{SCREENS.forEach(s=>$('#'+s).hidden=s!==id);if(id!=='game')$('#qmodal').hidden=true};
+const buzz=ms=>{try{if(NATIVE&&NATIVE.vibrate)NATIVE.vibrate(Array.isArray(ms)?ms[0]:ms);else if(navigator.vibrate)navigator.vibrate(ms)}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let uid=0;
+function gemSVG(lv){
+  const c=COL[lv],id='g'+(uid++);
+  return `<svg viewBox="0 0 100 104" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.l}"/><stop offset="1" stop-color="${c.m}"/></linearGradient></defs>
+<polygon points="25,8 75,8 96,34 50,100 4,34" fill="${c.d}"/>
+<polygon points="4,34 25,8 36,34" fill="${c.m}"/><polygon points="25,8 75,8 64,34 36,34" fill="url(#${id})"/>
+<polygon points="75,8 96,34 64,34" fill="${c.d}"/><polygon points="4,34 36,34 50,100" fill="${c.m}"/>
+<polygon points="36,34 64,34 50,100" fill="url(#${id})"/><polygon points="64,34 96,34 50,100" fill="${c.d}" opacity=".9"/>
+<path d="M31 13H62" stroke="#fff" stroke-opacity=".75" stroke-width="3.5" stroke-linecap="round"/>
+<path class="k k1" d="M52 36 46 50 55 58 47 74"/><path class="k k2" d="M28 36 37 48 30 60M72 36 63 49 72 57"/>
+<text x="50" y="66" text-anchor="middle" font-family="'Baloo 2',system-ui,sans-serif" font-weight="800" font-size="32" fill="#fff" stroke="${c.d}" stroke-width="5" paint-order="stroke">${lv}</text></svg>`;
+}
+$('#hero').innerHTML=LV.map(lv=>`<div class="lv${lv}" style="width:${lv===5?104:lv===3?88:74}px">${gemSVG(lv)}</div>`).join('');
+const sky=$('#sky');
+for(let i=0;i<46;i++){const s=document.createElement('i');s.className='star';const z=Math.random()*2+1;
+  s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${z}px;height:${z}px;opacity:${.25+Math.random()*.6}`;sky.prepend(s)}
+
+/* ================= native bridge (Android app) ================= */
+const nativeH={};
+window.GR={native(type,data){const f=nativeH[type];if(f)f(data)}};
+const tilt={seen:false,beta:null,gamma:null,base:null,lane:-1,since:0};
+function onTilt(beta,gamma){if(gamma==null)return;tilt.seen=true;tilt.beta=beta;tilt.gamma=gamma;if(tilt.base==null)tilt.base=beta}
+nativeH.tilt=d=>onTilt(d.beta,d.gamma);
+async function enableTilt(btn){
+  if(NATIVE){try{NATIVE.tilt(true)}catch(e){}setTimeout(()=>tiltLabel(btn),1200);btn.textContent='Checking tilt…';return}
+  try{
+    if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
+      if(await DeviceOrientationEvent.requestPermission()!=='granted')throw 0}
+    addEventListener('deviceorientation',e=>onTilt(e.beta,e.gamma));btn.textContent='Checking tilt…';
+    setTimeout(()=>tiltLabel(btn),1500);
+  }catch(e){btn.textContent='Tilt not allowed: tap gems instead'}
+}
+function tiltLabel(btn){btn.textContent=tilt.seen?'Tilt control is on':'Tilt not available here: tap gems instead';btn.classList.toggle('ok',tilt.seen)}
+$('#b-tilt').onclick=e=>enableTilt(e.currentTarget);
+$('#b-tilt2').onclick=e=>enableTilt(e.currentTarget);
+if(NATIVE){try{NATIVE.tilt(true)}catch(e){}}
+
+/* ================= no-repeat question history (host phone) ================= */
+let hist=store.get('gemrush.v1',{round:0,used:{}});if(!hist||!hist.used)hist={round:0,used:{}};
+const saveHist=()=>store.set('gemrush.v1',hist);
+function pickQ(lv){
+  const pool=BANK[lv].map((q,i)=>({id:lv+'-'+i,q}));
+  const fresh=pool.filter(p=>hist.used[p.id]===undefined||hist.round-hist.used[p.id]>=NOREPEAT);
+  const p=fresh.length?fresh[Math.floor(Math.random()*fresh.length)]
+    :pool.reduce((a,b)=>(hist.used[a.id]??-1)<=(hist.used[b.id]??-1)?a:b);
+  hist.used[p.id]=hist.round;return p;
+}
+const freshCount=lv=>BANK[lv].filter((_,i)=>{const u=hist.used[lv+'-'+i];return u===undefined||hist.round+1-u>=NOREPEAT}).length;
+const shuffle=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(x=>x[1]);
+
+/* ================= networking ================= */
+function openWS(url,ms){
+  return new Promise((res,rej)=>{let ws;try{ws=new WebSocket(url)}catch(e){rej(e);return}
+    const t=setTimeout(()=>{try{ws.close()}catch(e){}rej(new Error('timeout'))},ms);
+    ws.onopen=()=>{clearTimeout(t);res(ws)};ws.onerror=()=>{clearTimeout(t);rej(new Error('error'))}});
+}
+let role=null;      // 'host' | 'client'
+let hubWS=null,clientWS=null,clientAddr=null,reconnectTimer=0;
+
+/* ================= HOST ENGINE (runs only on the host phone) ================= */
+const E={players:[],gems:[],setNo:0,setStart:0,active:false,autoDone:false,timers:[],tick:0,running:false};
+const later=(fn,ms)=>{const t=setTimeout(fn,ms);E.timers.push(t);return t};
+function newPlayer(id,name,kind){return {id,name,kind,score:0,time:0,log:[],gem:null,done:false,last:0,away:false}}
+function hostSend(p,m){
+  if(p.kind==='local')ui(m);
+  else if(p.kind==='remote'&&!p.away&&hubWS&&hubWS.readyState===1)hubWS.send(JSON.stringify({to:p.id,data:m}));
+}
+const bcast=m=>E.players.forEach(p=>hostSend(p,m));
+function lobbyMsg(){return {t:'lobby',players:E.players.map(p=>({id:p.id,name:p.name,kind:p.kind,away:p.away}))}}
+function scoreMsg(){return {t:'score',players:E.players.map(p=>({id:p.id,name:p.name,score:p.score,log:p.log,away:p.away,
+  st:p.away?'offline':!p.gem?'choosing':p.done?'done':'answering '+p.gem.lv}))}}
+function renderHostList(){
+  $('#host-list').innerHTML=E.players.map(p=>`<li><span>${esc(p.name)}${p.kind==='local'?' (you, host)':''}</span><span class="${p.away?'wait':'on'}">${p.away?'Left':'Ready'}</span></li>`).join('')
+    +Array.from({length:MAXP-E.players.length},()=>`<li><span class="wait">Empty seat</span><span class="wait">${$('#fill').checked?'Computer':'—'}</span></li>`).join('');
+}
+$('#fill').onchange=renderHostList;
+function onHub(raw){
+  let m;try{m=JSON.parse(raw)}catch(e){return}
+  if(m.t==='_join'){
+    let p=E.players.find(x=>x.id===m.id);
+    if(p){p.away=false;p.name=m.name||p.name;hostSend(p,lobbyMsg());if(E.running){hostSend(p,{t:'sync',setNo:E.setNo});hostSend(p,scoreMsg())}}
+    else if(E.running){hubWS.send(JSON.stringify({to:m.id,data:{t:'busy'}}));return}
+    else if(E.players.filter(x=>x.kind!=='bot').length>=MAXP){hubWS.send(JSON.stringify({to:m.id,data:{t:'full'}}));return}
+    else{p=newPlayer(m.id,(m.name||'Player').slice(0,12),'remote');E.players.push(p);buzz(25)}
+    bcast(lobbyMsg());renderHostList();
+  }else if(m.t==='_leave'){
+    const p=E.players.find(x=>x.id===m.id);if(!p)return;
+    if(!E.running){E.players=E.players.filter(x=>x!==p);bcast(lobbyMsg());renderHostList();return}
+    p.away=true;if(p.gem&&!p.done)record(p,0,0,true);
+    bcast(scoreMsg());checkSetDone();
+  }else if(m.t==='_msg'){
+    const p=E.players.find(x=>x.id===m.from);if(!p)return;const d=m.data||{};
+    if(d.t==='claim')claim(p,d.lane,false);
+    else if(d.t==='ans')answer(p,d.i);
+  }
+}
+async function startHosting(){
+  role='host';show('s-host');
+  E.players=[newPlayer(myPid,myName(),'local')];E.running=false;renderHostList();
+  $('#qr').innerHTML='<div class="spin"></div>';$('#host-addr').textContent='…';
+  if(NATIVE){
+    $('#host-sub').textContent='Turning on this phone\'s hotspot…';
+    nativeH.host=d=>{
+      if(!d.ok){$('#host-sub').textContent='Hotspot could not start: '+(d.err||'unknown')+'. You can still play against the computer.';$('#qr').textContent='No hotspot';$('#host-addr').textContent='—';return}
+      const info={g:'GR1',s:d.ssid||'',p:d.pass||'',x:d.sec||0,i:d.ip||'',o:PORT};
+      drawQR(JSON.stringify(info));
+      $('#host-addr').textContent=d.ip||'(shown after a player joins)';
+      $('#host-sub').textContent=d.note||'Other players: open Gem Rush, tap Join a game, and scan this code.';
+      connectHub('ws://127.0.0.1:'+PORT);
+    };
+    try{NATIVE.startHost()}catch(e){nativeH.host({ok:false,err:String(e)})}
+  }else if(params.get('hub')){
+    const hub=params.get('hub');drawQR(JSON.stringify({g:'GR1',i:hub.split(':')[0],o:+(hub.split(':')[1]||PORT)}));
+    $('#host-addr').textContent=hub;$('#host-sub').textContent='Test mode: players join with the address below.';
+    connectHub('ws://'+hub);
+  }else{
+    $('#host-sub').textContent='This browser version can\'t host other phones. Install the Gem Rush app for multiplayer. You can still start a game against computer players.';
+    $('#qr').textContent='Multiplayer needs the app';$('#host-addr').textContent='—';
+  }
+}
+async function connectHub(url){
+  try{
+    hubWS=await openWS(url+'/?role=host',4000);
+    hubWS.onmessage=e=>onHub(e.data);
+    hubWS.onclose=()=>{hubWS=null};
+  }catch(e){$('#host-sub').textContent='Could not open the game room on this phone. Try again.'}
+}
+function drawQR(text){
+  try{const q=qrcode(0,'M');q.addData(text);q.make();$('#qr').innerHTML=q.createSvgTag({cellSize:6,margin:2,scalable:true})}
+  catch(e){$('#qr').textContent='QR unavailable: use the address below'}
+}
+function stopHosting(){
+  try{hubWS&&hubWS.close()}catch(e){}hubWS=null;
+  if(NATIVE){try{NATIVE.stopHost()}catch(e){}}
+  E.timers.forEach(clearTimeout);E.timers=[];E.running=false;E.active=false;role=null;
+}
+function startGameHost(solo){
+  E.timers.forEach(clearTimeout);E.timers=[];
+  E.players=E.players.filter(p=>p.kind!=='bot'&&!p.away);
+  if(solo||$('#fill').checked){const names=['Asha','Rohan','Meera'].filter(n=>!E.players.some(p=>p.name===n));
+    while(E.players.length<MAXP){const b=newPlayer('bot'+E.players.length,names.shift(),'bot');b.risk=E.players.length%2?.7:.25;E.players.push(b)}}
+  E.players.forEach(p=>Object.assign(p,{score:0,time:0,log:[],gem:null,done:false,last:0}));
+  hist.round++;saveHist();E.setNo=0;E.running=true;
+  bcast(lobbyMsg());nextSet();
+}
+function nextSet(){
+  E.setNo++;E.autoDone=false;
+  E.players.forEach(p=>{p.gem=null;p.done=false;p.last=0;p.claimAt=3000+Math.random()*4500});
+  E.gems=LV.map((lv,lane)=>{const {id,q}=pickQ(lv);return {lv,lane,id,q,owner:null}});saveHist();
+  E.setStart=performance.now();E.active=true;
+  bcast({t:'set',n:E.setNo,of:SETS,gems:E.gems.map(g=>({lane:g.lane,lv:g.lv,cat:g.q[0]}))});
+  bcast(scoreMsg());
+}
+function hostTick(){
+  if(role!=='host'||!E.active)return;
+  const t=performance.now()-E.setStart;
+  E.players.forEach(p=>{if(p.kind==='bot'&&!p.gem&&t>p.claimAt)botClaim(p)});
+  if(t>=FALL+250&&!E.autoDone){E.autoDone=true;autoAssign()}
+}
+setInterval(hostTick,100);
+function claim(p,lane,auto){
+  const g=E.gems[lane];
+  if(!E.active||!g||g.owner!==null||p.gem||p.away){if(p.kind!=='bot'&&!p.gem)hostSend(p,{t:'nope',lane});return false}
+  g.owner=p.id;p.gem=g;
+  bcast({t:'claim',lane,id:p.id,name:p.name,auto:!!auto});
+  if(p.kind==='bot'){
+    const acc={1:.85,3:.62,5:.42}[g.lv],tt=2500+Math.random()*10500;
+    later(()=>record(p,Math.random()<acc?g.lv:-g.lv,tt/1000),tt);
+  }else{
+    const opts=g.q.slice(2);p.order=shuffle(opts);p.correct=opts[0];p.qAt=performance.now();
+    hostSend(p,{t:'q',lane,lv:g.lv,cat:g.q[0],text:g.q[1],opts:p.order,auto:!!auto});
+    p.qTimer=later(()=>answer(p,-1),(QTIME+LOCK)*1000+(p.kind==='remote'?2500:400));
+  }
+  bcast(scoreMsg());return true;
+}
+function botClaim(p){
+  const free=E.gems.filter(g=>g.owner===null).sort((a,b)=>b.lv-a.lv);
+  if(!free.length){p.claimAt=Infinity;return}
+  claim(p,(Math.random()<p.risk?free[0]:free[Math.max(0,free.length-1-(Math.random()<.4?1:0))]).lane,false);
+}
+function autoAssign(){
+  E.players.filter(p=>!p.gem&&!p.away).forEach(p=>{const free=E.gems.filter(g=>g.owner===null);
+    if(free.length)claim(p,free[Math.floor(Math.random()*free.length)].lane,true)});
+  E.gems.filter(g=>g.owner===null).forEach(g=>bcast({t:'gone',lane:g.lane}));
+}
+function answer(p,i){
+  if(!p.gem||p.done||p.kind==='bot')return;
+  clearTimeout(p.qTimer);
+  const ok=i>=0&&p.order[i]===p.correct,lv=p.gem.lv;
+  const secs=Math.min(Math.max((performance.now()-p.qAt)/1000-LOCK,0),QTIME);
+  hostSend(p,{t:'res',ok,pts:ok?lv:-lv,correct:p.correct,i});
+  record(p,ok?lv:-lv,secs);
+}
+function record(p,pts,secs,silent){
+  if(p.done)return;p.done=true;p.score+=pts;p.time+=secs;p.log.push(pts);p.last=pts;
+  bcast(scoreMsg());checkSetDone();
+}
+function checkSetDone(){
+  if(!E.active)return;
+  const live=E.players.filter(p=>!p.away);
+  if(live.every(p=>p.done)||(E.autoDone&&live.every(p=>p.done||!p.gem)))endSet();
+}
+function endSet(){
+  E.active=false;
+  E.players.filter(p=>!p.done).forEach(p=>{p.done=true;p.log.push(0);p.last=0});
+  bcast({t:'setEnd',res:E.players.map(p=>({name:p.name,pts:p.last}))});
+  later(()=>{if(E.setNo>=SETS)endGame();else nextSet()},4200);
+}
+function endGame(){
+  E.running=false;
+  const rank=[...E.players].sort((a,b)=>b.score-a.score||a.time-b.time);
+  bcast({t:'end',tie:rank.length>1&&rank[0].score===rank[1].score,
+    rank:rank.map(p=>({id:p.id,name:p.name,score:p.score,time:+p.time.toFixed(1),log:p.log}))});
+  $('#fresh').textContent=`Unseen questions left: ${LV.map(lv=>`${freshCount(lv)} of ${BANK[lv].length} (${lv}-point)`).join(', ')}. A question doesn't come back for ${NOREPEAT} rounds while unseen ones remain.`;
+}
+
+/* ================= CLIENT (joining phone) ================= */
+function joinMsg(t,err){$('#join-msg').textContent=t;$('#join-msg').className='msg'+(err?' err':'');$('#join-spin').hidden=!!err||!t}
+async function connectClient(addr,quiet){
+  clientAddr=addr;
+  const host=addr.includes(':')?addr:addr+':'+PORT;
+  const ws=await openWS(`ws://${host}/?role=player&id=${encodeURIComponent(myPid)}&name=${encodeURIComponent(myName())}`,3000);
+  clientWS=ws;role='client';
+  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(x){return}ui(m)};
+  ws.onclose=()=>{clientWS=null;if(role==='client')scheduleReconnect()};
+  if(!quiet){joinMsg('Connected!');$('#join-spin').hidden=true}
+  return ws;
+}
+function scheduleReconnect(){
+  clearTimeout(reconnectTimer);
+  if(!$('#game').hidden)status('Connection lost… reconnecting');
+  reconnectTimer=setTimeout(async()=>{if(role!=='client'||clientWS)return;
+    try{await connectClient(clientAddr,true);status('Reconnected')}catch(e){scheduleReconnect()}},2000);
+}
+function leaveClient(){role=null;clearTimeout(reconnectTimer);try{clientWS&&clientWS.close()}catch(e){}clientWS=null}
+async function joinFromScan(text){
+  let info;try{info=JSON.parse(text)}catch(e){}
+  if(!info||info.g!=='GR1'){joinMsg('That is not a Gem Rush code. Try again.',true);return}
+  const port=info.o||PORT;
+  if(info.i){joinMsg('Connecting to the host…');try{await connectClient(info.i+':'+port);return}catch(e){}}
+  if(!NATIVE||!info.s){joinMsg('Could not reach the host. Make sure you are on the host\'s hotspot.',true);return}
+  joinMsg('Joining the host\'s hotspot… tap Connect if your phone asks.');
+  nativeH.wifi=async d=>{
+    if(!d.ok){joinMsg('Could not join the hotspot: '+(d.err||'unknown'),true);return}
+    joinMsg('Connecting to the game…');
+    for(const ip of [d.ip,info.i].filter(Boolean)){try{await connectClient(ip+':'+port);return}catch(e){}}
+    joinMsg('Joined the hotspot but could not reach the game. Ask the host to restart the room.',true);
+  };
+  try{NATIVE.joinWifi(info.s,info.p||'',info.x||0)}catch(e){joinMsg('Could not join: '+e,true)}
+}
+nativeH.scan=d=>{if(d&&d.text)joinFromScan(d.text);else joinMsg('')};
+$('#b-scan').onclick=()=>{
+  myName();
+  if(NATIVE){joinMsg('Opening camera…');try{NATIVE.scan()}catch(e){joinMsg('Camera not available',true)}}
+  else joinMsg('Scanning works in the Gem Rush app. Here, type the host\'s address instead.',true);
+};
+$('#b-connect').onclick=async()=>{
+  const a=$('#addr').value.trim();if(!a){joinMsg('Type the address shown on the host\'s phone.',true);return}
+  joinMsg('Connecting…');try{await connectClient(a)}catch(e){joinMsg('Could not reach '+a+'. Check you are on the same Wi-Fi or hotspot.',true)}
+};
+function sendToHost(m){
+  if(role==='host'){const me=E.players.find(p=>p.kind==='local');if(m.t==='claim')claim(me,m.lane,false);else if(m.t==='ans')answer(me,m.i)}
+  else if(clientWS&&clientWS.readyState===1)clientWS.send(JSON.stringify(m));
+}
+
+/* ================= SHARED UI (driven by messages) ================= */
+let view={gems:[],start:0,active:false,pending:-1,mine:false,players:[]};
+function ui(m){
+  switch(m.t){
+    case 'lobby':
+      if(role==='client'){$('#join-wait').hidden=false;joinMsg('');
+        $('#join-list').innerHTML=m.players.map(p=>`<li><span>${esc(p.name)}${p.id===myPid?' (you)':''}</span><span class="on">${p.kind==='local'?'Host':'Ready'}</span></li>`).join('');}
+      break;
+    case 'full':joinMsg('This room already has 3 players.',true);leaveClient();break;
+    case 'busy':joinMsg('A game is already running. Wait for it to finish.',true);leaveClient();break;
+    case 'sync':show('game');status('Back in! You\'ll play from the next set.');break;
+    case 'set':startSetView(m);break;
+    case 'claim':onClaimView(m);break;
+    case 'nope':if(view.pending===m.lane)view.pending=-1;break;
+    case 'gone':{const g=view.gems[m.lane];if(g)fadeGem(g);break}
+    case 'q':openQ(m);break;
+    case 'res':showRes(m);break;
+    case 'score':view.players=m.players;renderChips();break;
+    case 'setEnd':onSetEnd(m);break;
+    case 'end':onEnd(m);break;
+  }
+}
+function status(t){$('#status').textContent=t;$('#status').hidden=!t}
+function startSetView(m){
+  show('game');$('#qmodal').hidden=true;
+  view.gems.forEach(g=>g.el.remove());
+  view={...view,active:true,pending:-1,mine:false,start:performance.now()};
+  tilt.base=tilt.beta;tilt.lane=-1;aim(-1);
+  $('#setno').textContent=`Set ${m.n} of ${m.of}`;
+  view.gems=m.gems.map(d=>{
+    const el=document.createElement('div');
+    el.className='gem lv'+d.lv;el.style.left=((d.lane*2+1)/6*100)+'%';
+    el.innerHTML=`<div class="tail"></div>${gemSVG(d.lv)}<div class="hint"></div><div class="tag"></div>`;
+    el.querySelector('.hint').textContent=d.cat;
+    const g={...d,el,taps:0,owner:null,gone:false};
+    el.addEventListener('pointerdown',e=>{e.preventDefault();tapGem(g)});
+    el.style.transform='translate(-50%,-150px)';sky.appendChild(el);return g;
+  });
+  status(tilt.seen?'Tap a gem 3 times, or tilt to grab it':'Tap a gem 3 times to grab it');
+}
+function tapGem(g){
+  if(!view.active||view.mine||view.pending>=0||g.owner!==null)return;
+  g.taps++;buzz(12);g.el.classList.add('hit');setTimeout(()=>g.el.classList.remove('hit'),90);
+  if(g.taps<TAPS)g.el.classList.add('t'+g.taps);else{view.pending=g.lane;sendToHost({t:'claim',lane:g.lane})}
+}
+function onClaimView(m){
+  const g=view.gems[m.lane];if(!g)return;g.owner=m.id;
+  if(m.id===myPid){view.mine=true;view.pending=-1;aim(-1);buzz(40);shatter(g)}
+  else{
+    if(view.pending===m.lane)view.pending=-1;
+    g.el.classList.add('taken');g.el.querySelector('.tag').textContent=m.name+' took it';
+    setTimeout(()=>fadeGem(g),900);
+  }
+}
+function fadeGem(g){if(g.gone)return;g.gone=true;g.el.classList.add('fade');setTimeout(()=>g.el.remove(),500)}
+function shatter(g){
+  if(g.gone)return;
+  const r=g.el.getBoundingClientRect(),s=sky.getBoundingClientRect(),c=COL[g.lv];
+  const cx=r.left-s.left+r.width/2,cy=r.top-s.top+r.height/2;
+  for(let i=0;i<12;i++){const d=document.createElement('i'),a=Math.PI*2*i/12+Math.random()*.5,dist=60+Math.random()*90;
+    d.className='shard';d.style.cssText=`left:${cx}px;top:${cy}px;background:${i%2?c.l:c.m};--dx:${Math.cos(a)*dist}px;--dy:${Math.sin(a)*dist}px;--r:${Math.random()*540-270}deg`;
+    sky.appendChild(d);setTimeout(()=>d.remove(),900)}
+  g.gone=true;g.el.remove();
+}
+function frame(){
+  requestAnimationFrame(frame);
+  if(!view.active)return;
+  const t=performance.now()-view.start,H=sky.clientHeight;
+  view.gems.forEach(g=>{if(g.gone)return;const end=H-g.el.offsetHeight-30;
+    g.el.style.transform=`translate(-50%,${-150+Math.min(t/FALL,1)*(end+150)}px)`});
+  if(!view.mine&&view.pending<0&&tilt.seen)checkTilt();
+}
+requestAnimationFrame(frame);
+function aim(lane){document.querySelectorAll('.lane').forEach((l,i)=>l.classList.toggle('aim',i===lane))}
+function checkTilt(){
+  const gm=tilt.gamma,b=tilt.beta-(tilt.base??tilt.beta);
+  const lane=gm<-25?0:gm>25?2:b<-22?1:-1;aim(lane);
+  if(lane!==tilt.lane){tilt.lane=lane;tilt.since=performance.now();return}
+  if(lane>=0&&performance.now()-tilt.since>400){const g=view.gems[lane];
+    if(g&&g.owner===null){view.pending=lane;sendToHost({t:'claim',lane})}tilt.lane=-1}
+}
+addEventListener('keydown',e=>{const lane={ArrowLeft:0,ArrowUp:1,ArrowRight:2}[e.key];const g=view.gems[lane];
+  if(g&&view.active&&!view.mine&&view.pending<0&&g.owner===null){view.pending=lane;sendToHost({t:'claim',lane})}});
+
+/* question card: options stay locked for 0.8 s so a fast 4th tap can't answer by accident */
+let qState=null;
+function openQ(m){
+  if(qState)clearInterval(qState.iv);
+  const bd=$('#qbadge');bd.textContent=m.lv+(m.lv>1?' points':' point');bd.className='badge lv'+m.lv;
+  $('#qcat').textContent=(m.auto?'Auto-assigned · ':'')+m.cat;
+  $('#qtext').textContent=m.text;
+  const box=$('#qopts');
+  box.innerHTML=m.opts.map((_,i)=>`<button class="opt" data-i="${i}"><b>${'ABCD'[i]}</b><span></span></button>`).join('');
+  [...box.children].forEach((b,i)=>b.lastChild.textContent=m.opts[i]);
+  box.classList.add('lock');
+  const fd=$('#qfeed');fd.textContent='Get ready…';fd.className='feed';
+  $('#qmodal').hidden=false;
+  const q=qState={over:false,opts:m.opts,lv:m.lv,iv:0,t0:0};
+  ring(QTIME);
+  setTimeout(()=>{if(q!==qState||q.over)return;box.classList.remove('lock');fd.textContent='';q.t0=performance.now();
+    q.iv=setInterval(()=>{const left=QTIME-(performance.now()-q.t0)/1000;ring(left);if(left<=0)pick(-1)},100)},LOCK*1000);
+  box.onclick=e=>{const b=e.target.closest('.opt');if(b)pick(+b.dataset.i)};
+}
+function ring(left){$('#qtimer').style.setProperty('--p',Math.max(left,0)/QTIME);$('#qsec').textContent=Math.max(0,Math.ceil(left))}
+function pick(i){
+  const q=qState;if(!q||q.over)return;q.over=true;clearInterval(q.iv);
+  [...$('#qopts').children].forEach((b,k)=>{b.disabled=true;if(k===i)b.style.borderColor='var(--gold)'});
+  $('#qfeed').textContent=i<0?'Time up…':'Checking…';
+  sendToHost({t:'ans',i});
+}
+function showRes(m){
+  const q=qState;if(q){q.over=true;clearInterval(q.iv)}
+  [...$('#qopts').children].forEach((b,k)=>{b.disabled=true;b.style.borderColor='';
+    if(q&&q.opts[k]===m.correct)b.classList.add('right');else if(k===m.i)b.classList.add('wrong')});
+  const fd=$('#qfeed'),lv=Math.abs(m.pts);
+  fd.textContent=m.i<0?`Time up · −${lv}`:m.ok?`Correct · +${lv}`:`Wrong · −${lv}`;
+  fd.className='feed '+(m.ok?'good':'bad');buzz(m.ok?30:[60,40,60]);
+  setTimeout(()=>{if(qState===q){$('#qmodal').hidden=true;qState=null}},1900);
+}
+function renderChips(){
+  $('#chips').innerHTML=view.players.map(p=>{
+    const dots=Array.from({length:SETS},(_,i)=>{const v=p.log[i];return `<i class="${v===undefined?'':v>0?'up':v<0?'dn':'z'}"></i>`}).join('');
+    return `<div class="chip${p.id===myPid?' me':''}"><div class="nm">${esc(p.name)}</div><div class="sc">${p.score}</div><div class="st">${p.st}</div><div class="dots">${dots}</div></div>`}).join('');
+  const me=view.players.find(p=>p.id===myPid);
+  if(me&&me.st==='done'){const w=view.players.filter(p=>p.st.startsWith('answering')||p.st==='choosing').map(p=>p.name);if(w.length)status(`Waiting for ${w.join(' and ')}…`)}
+}
+const sign=v=>v>0?'+'+v:v<0?'−'+Math.abs(v):'0';
+function onSetEnd(m){
+  view.active=false;status('');aim(-1);
+  const t=$('#toast');
+  t.innerHTML=m.res.map(r=>`<span>${esc(r.name)} <span class="${r.pts>0?'p':r.pts<0?'n':'z'}">${sign(r.pts)}</span></span>`).join('');
+  setTimeout(()=>t.classList.add('show'),1500);setTimeout(()=>t.classList.remove('show'),4100);
+}
+function onEnd(m){
+  view.gems.forEach(g=>g.el.remove());view.gems=[];view.active=false;show('s-end');
+  const top=m.rank[0];
+  $('#winner').textContent=top.id===myPid?'You win!':`${top.name} wins`;
+  $('#tienote').textContent=m.tie?'Tied on points, so the faster total answer time wins.':'Highest score wins. A tie goes to the faster player.';
+  $('#rank').innerHTML=m.rank.map((p,i)=>`<li class="${p.id===myPid?'me':''}"><span class="pos">${i+1}</span><span class="who">${esc(p.name)} · ${p.time} s</span><span class="log">${p.log.map(v=>`<i class="${v>0?'up':v<0?'dn':'z'}">${sign(v)}</i>`).join('')}</span><span class="tot">${p.score}</span></li>`).join('');
+  const host=role==='host';
+  $('#b-again').hidden=!host;$('#bankinfo').hidden=!host;$('#end-wait').hidden=host;
+}
+
+/* ================= buttons ================= */
+$('#b-host').onclick=()=>{myName();startHosting()};
+$('#b-solo').onclick=()=>{myName();role='host';E.players=[newPlayer(myPid,myName(),'local')];startGameHost(true)};
+$('#b-join').onclick=()=>{myName();show('s-join');joinMsg('');$('#join-wait').hidden=true};
+$('#b-start').onclick=()=>startGameHost(false);
+$('#b-again').onclick=()=>startGameHost(!hubWS);
+$('#b-host-back').onclick=()=>{stopHosting();show('s-start')};
+$('#b-join-back').onclick=()=>{leaveClient();show('s-start')};
+$('#b-home').onclick=()=>{if(role==='host')stopHosting();else leaveClient();show('s-start')};
+if(params.get('join')){show('s-join');$('#addr').value=params.get('join')}
+if(params.get('name'))$('#name').value=params.get('name');
+}
+</script>
+</body>
+</html>

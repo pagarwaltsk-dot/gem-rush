@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- gem, kept inside the 66dp safe zone -->
+    <path android:fillColor="#C9202C" android:pathData="M42,32 L66,32 L76,45 L54,78 L32,45 Z" />
+    <path android:fillColor="#FF7A3D" android:pathData="M32,45 L42,32 L47,45 Z" />
+    <path android:fillColor="#FFE2B0" android:pathData="M42,32 L66,32 L61,45 L47,45 Z" />
+    <path android:fillColor="#FF7A3D" android:pathData="M32,45 L47,45 L54,78 Z" />
+    <path android:fillColor="#FFB070" android:pathData="M47,45 L61,45 L54,78 Z" />
+    <path android:fillColor="#C9202C" android:pathData="M61,45 L76,45 L54,78 Z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:pathData="M45,35 L58,35" />
+    <path android:fillColor="#FFCF4A" android:pathData="M78,30 L80,35 L85,37 L80,39 L78,44 L76,39 L71,37 L76,35 Z" />
+</vector>
