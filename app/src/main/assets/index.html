@@ -385,7 +385,7 @@ const GOLD_CHANCE=.15,POWER_CHANCE=.4,POWER_FALL=8000,STREAK_N=3,REV_CHANCE=.35,
 const PRANKS=['cloud','shuffle','ice'],PK_ICON={cloud:'☁️',shuffle:'🔀',ice:'🧊',shield:'🛡️',fifty:'✂️'},PK_NAME={cloud:'Cloud',shuffle:'Shuffle',ice:'Ice',shield:'Shield',fifty:'50:50'};
 /* shape-changing gems: a gem can be grabbed only while it is round.
    m = {ph: offset ms, per: cycle ms, rd: round ms}; t = ms since the set started */
-const isRound=(m,t)=>!!m&&t>=0&&((t-m.ph)%m.per+m.per)%m.per<m.rd;
+const isRound=(m,t)=>!!m&&t>=m.ph&&(t-m.ph)%m.per<m.rd;
 const roundWin=(m,t)=>Math.floor((t-m.ph)/m.per);
 function morphPlan(setNo,lv){
   const rd=lv===10?550:Math.max(850,1500-(setNo-1)*160);   // round moments get shorter each set; golden is very brief
@@ -706,7 +706,7 @@ function nextSet(){
     E.power=Math.random()<pr?{kind:r<.25?'shield':r<.5?'fifty':PRANKS[Math.floor(Math.random()*3)],x:Math.random()<.5?33:67,owner:null,name:''}:null;
   }
   saveHist();
-  E.players.forEach(p=>{p.lost=false;p.heistTry=0});
+  E.players.forEach(p=>{p.lost=false;p.heistTry=0;p.hurried=false;p.pendingAns=null;clearTimeout(p.pendingT)});
   E.setStart=performance.now();E.active=true;E.phase='play';
   bcast({t:'set',g:E.game,n:E.setNo,of:SETS,el:0,gems:E.gems.map(g=>({lane:g.lane,lv:g.lv,cat:g.q[0],qid:g.id,rev:!!g.rev,mo:g.mo})),power:E.power});
   sendState();
@@ -722,6 +722,7 @@ function hostTick(){
   if(h&&!h.owner&&!h.gone&&t>h.st+HEIST_FALL){h.gone=true;bcast({t:'heistGone',g:E.game,n:E.setNo});sendState();checkSetDone()}
   E.players.forEach(p=>{if(p.kind==='bot'&&h&&!h.owner&&!h.gone&&p.id!==h.from&&p.heistTry&&t>p.heistTry&&isRound(h.mo,t-250)&&!(p.gem&&!p.done)){p.heistTry=0;claimHeist(p)}});
   if(t>=FALL+250&&!E.autoDone){E.autoDone=true;autoAssign()}
+  hurry();
 }
 setInterval(hostTick,100);
 function claim(p,lane,auto){
@@ -732,13 +733,13 @@ function claim(p,lane,auto){
   p.shieldOn=false;p.fiftyHide=null;
   p.qAt=performance.now();botsPredict(p);
   if(p.kind==='ghost'){
-    const gs=E.ghost.s[E.setNo-1],r=gs.r||[0,-g.lv,QTIME],tt=Math.max(1000,(r[2]||QTIME)*1000+LOCK*1000);
-    later(()=>{if(p.done)return;const ok=!!r[0];record(p,r[1],r[2]||QTIME,false,ok);if(!ok&&g.lv>=5)spawnHeist(g,p)},tt);
+    const gs=E.ghost.s[E.setNo-1],r=gs.r||[0,-g.lv,QTIME],secs=Math.min(+r[2]||QTIME,QTIME),tt=Math.max(1000,secs*1000+LOCK*1000);
+    planAnswer(p,()=>{const ok=!!r[0];record(p,+r[1]||0,secs,false,ok);if(!ok&&g.lv>=5)spawnHeist(g,p)},tt);
   }else if(p.kind==='bot'){
     let acc={1:.85,3:.62,5:.42,10:.35}[g.lv];const tt=2500+Math.random()*10500;
     if(p.fifty>0&&g.lv>=3){p.fifty--;acc+=(1-acc)/2}
     if(p.shield>0&&g.lv>=5){p.shield--;p.shieldOn=true}
-    later(()=>{if(p.done)return;const ok=Math.random()<acc;record(p,settle(p,ok),tt/1000,false,ok);if(!ok&&g.lv>=5)spawnHeist(g,p)},tt);
+    planAnswer(p,()=>{const ok=Math.random()<acc;record(p,settle(p,ok),tt/1000,false,ok);if(!ok&&g.lv>=5)spawnHeist(g,p)},tt);
   }else{
     const opts=g.q.slice(2);p.order=shuffle(opts);p.correct=opts[0];p.qAt=performance.now();
     p.qMsg={t:'q',g:E.game,n:E.setNo,lane,id:g.id,rev:!!g.rev,lv:g.lv,cat:g.q[0],text:g.q[1],opts:p.order,auto:!!auto,x2:p.x2,sh:p.shield,ff:p.fifty};p.resMsg=null;
@@ -759,8 +760,29 @@ function autoAssign(){
   E.players.filter(p=>!p.gem&&!p.away&&p.kind!=='ghost').forEach(p=>{const free=E.gems.filter(g=>g.owner===null);
     if(free.length)claim(p,free[Math.floor(Math.random()*free.length)].lane,true)});
   E.gems.filter(g=>g.owner===null).forEach(g=>{g.gone=true;bcast({t:'gone',g:E.game,n:E.setNo,lane:g.lane})});
-  sendState();
+  sendState();checkSetDone();     // players left with no gem (e.g. a ghost that lost its race) must not hold the set open
 }
+/* computer players and ghosts answer after a delay, unless all real players are already done (then: almost at once) */
+function planAnswer(p,fn,ms){
+  clearTimeout(p.pendingT);
+  p.pendingAns=()=>{p.pendingAns=null;if(!p.done&&p.gem)fn()};
+  p.pendingT=later(()=>p.pendingAns&&p.pendingAns(),ms);
+}
+function hurry(){
+  if(!E.active)return;
+  const humans=E.players.filter(p=>(p.kind==='local'||p.kind==='remote')&&!p.away);
+  if(!humans.length||!humans.every(p=>p.done))return;
+  E.players.forEach(p=>{
+    if(p.kind==='ghost'&&!p.gem&&!p.lost){
+      const gs=E.ghost&&E.ghost.s[E.setNo-1],g=gs&&gs.c&&E.gems[gs.c[0]];
+      if(g&&g.owner===null)claim(p,g.lane,false);else{p.lost=true;checkSetDone()}
+    }
+    if(p.kind==='bot'&&!p.gem){const free=E.gems.filter(g=>g.owner===null);if(free.length)claim(p,free[Math.floor(Math.random()*free.length)].lane,false)}
+    if((p.kind==='ghost'||p.kind==='bot')&&p.gem&&!p.done&&p.pendingAns&&!p.hurried){
+      p.hurried=true;clearTimeout(p.pendingT);p.pendingT=later(()=>p.pendingAns&&p.pendingAns(),500+Math.random()*700)}
+  });
+}
+
 /* points for an answer, with streak bonus and shield; updates the streak */
 function settle(p,ok){
   const lv=p.gem.lv,wasX2=p.x2;let pts;
@@ -889,7 +911,7 @@ function checkSetDone(){
   if(!E.active)return;
   const live=E.players.filter(p=>!p.away),h=E.heist;
   if(h&&!h.gone&&!h.done)return;                     // wait for a dropped gem to be caught and answered, or to fall away
-  if(live.every(p=>p.done)||(E.autoDone&&live.every(p=>p.done||!p.gem)))endSet();
+  if(live.every(p=>p.done||(p.kind==='ghost'&&p.lost&&!p.gem))||(E.autoDone&&live.every(p=>p.done||!p.gem)))endSet();
 }
 function endSet(){
   E.active=false;E.phase='between';
@@ -1380,7 +1402,8 @@ function decodeGhost(code){
 }
 let pendingGhost=null;
 function hashGhost(){
-  const mm=/^#ghost-([A-Za-z0-9_-]+)$/.exec(location.hash);if(!mm||role)return;
+  const mm=/^#ghost-([A-Za-z0-9_-]+)$/.exec(location.hash);if(!mm)return;
+  if(role){if($('#s-end').hidden)return;if(role==='host')stopHosting();else leaveClient()}   // a finished game is open in this tab: leave it
   let d=null;try{d=decodeGhost(mm[1])}catch(e){}
   if(!d){show('s-start');return}
   pendingGhost=d;
