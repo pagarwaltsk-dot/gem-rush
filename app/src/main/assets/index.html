@@ -76,7 +76,24 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
 .star{position:absolute;border-radius:50%;background:#fff;pointer-events:none}
 #status{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:5;background:rgba(10,7,32,.8);border:1px solid var(--line);padding:6px 14px;border-radius:99px;font-size:14px;font-weight:700;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
 .gem{position:absolute;top:0;width:var(--w);will-change:transform;touch-action:none;cursor:pointer;z-index:2}
-.lv1{--w:80px;--glow:rgba(52,217,156,.6)}.lv3{--w:94px;--glow:rgba(75,163,255,.6)}.lv5{--w:110px;--glow:rgba(255,110,61,.7)}
+.lv1{--w:80px;--glow:rgba(52,217,156,.6)}.lv3{--w:94px;--glow:rgba(75,163,255,.6)}.lv5{--w:110px;--glow:rgba(255,110,61,.7)}.lv10{--w:118px;--glow:rgba(255,207,74,.9)}
+.lv10 svg{animation:bob 1.4s ease-in-out infinite alternate,shine 1s ease-in-out infinite alternate}
+@keyframes shine{from{filter:drop-shadow(0 0 10px var(--glow))}to{filter:drop-shadow(0 0 28px var(--glow)) brightness(1.15)}}
+.spark{animation:tw .8s ease-in-out infinite alternate;transform-origin:center}@keyframes tw{from{opacity:.2}to{opacity:1}}
+.pw{position:absolute;top:0;width:64px;height:64px;margin-left:-32px;border-radius:50%;display:grid;place-items:center;z-index:3;cursor:pointer;touch-action:none;
+  background:radial-gradient(circle at 35% 30%,#fff 0,#d6c8ff 22%,#7d5cff 70%,#3b1d9e 100%);box-shadow:0 0 22px rgba(160,130,255,.85);font:800 15px var(--hd);color:#fff;text-shadow:0 1px 2px #2a136e;will-change:transform}
+.pw svg{width:30px;height:30px}
+.pw.taken{opacity:.35;filter:grayscale(1)}.pw .tag{top:70%}
+.pw.taken .tag{display:block}
+.chip .pu{font-size:13px;color:var(--gold);min-height:18px;white-space:nowrap}
+.badge.lv10{background:linear-gradient(90deg,#ffe58a,#ffcf4a,#ffb020)}
+.xb{font:800 13px var(--hd);background:#ff4d8d;color:#fff;padding:2px 8px;border-radius:99px}
+.pwrow{display:flex;gap:8px;margin-top:12px}
+.pwrow button{flex:1;min-height:44px;border-radius:12px;border:2px solid #7d5cff;background:rgba(125,92,255,.18);font-weight:800}
+.pwrow button.on{border-color:var(--good);background:rgba(52,217,156,.18)}
+.pwrow button:disabled{opacity:.5}
+.opt.cut{opacity:.2;text-decoration:line-through}
+.snd{position:absolute;top:8px;right:8px;width:40px;height:34px;border-radius:10px;border:1px solid var(--line);background:transparent;font-size:16px}
 .gem svg{display:block;width:100%;height:auto;filter:drop-shadow(0 0 14px var(--glow));animation:bob 1.4s ease-in-out infinite alternate;transition:transform .08s}
 .gem.hit svg{transform:scale(.9)}
 .tail{position:absolute;left:28%;right:28%;bottom:55%;height:150px;background:linear-gradient(to top,var(--glow),transparent);filter:blur(9px);border-radius:50%}
@@ -94,6 +111,7 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
 .lane b{display:block;font:800 22px/1.1 var(--hd)}
 .lane span{font-size:13px;color:var(--mute)}
 .lane.l1 b{color:#34d99c}.lane.l3 b{color:#4ba3ff}.lane.l5 b{color:#ff7a3d}
+.lane.gold{border-color:#ffcf4a}.lane.gold b{color:#ffcf4a}
 .lane.aim{border-color:var(--gold);background:rgba(255,207,74,.14)}
 #toast{position:absolute;left:50%;bottom:16px;transform:translate(-50%,160%);transition:transform .3s;z-index:6;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 16px;display:flex;gap:16px;font-size:15px;white-space:nowrap}
 #toast.show{transform:translate(-50%,0)}
@@ -151,6 +169,7 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
         <li>Grab one by tapping it 3 times, or tilt your phone: left = 1, back = 3, right = 5.</li>
         <li>Once a gem is taken, nobody else can have it. Answer within 15 seconds.</li>
         <li>Right answer: + points. Wrong or time up: − points. 5 sets per game.</li>
+        <li>Look out for the rare golden 10 gem, and grab the purple bubbles: 🛡️ Shield (a wrong answer costs nothing) and ✂️ 50:50. Three right in a row makes your next gem worth double!</li>
       </ol>
     </div>
   </div>
@@ -201,7 +220,8 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
 </section>
 
 <section id="game" hidden>
-  <div class="top">
+  <div class="top" style="position:relative">
+    <button class="snd" id="b-snd" aria-label="Sound on or off">🔊</button>
     <div class="setno" id="setno">Set 1 of 5</div>
     <div id="chips"></div>
   </div>
@@ -226,6 +246,10 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
     </div>
     <p id="qtext"></p>
     <div id="qopts"></div>
+    <div class="pwrow" id="pwrow" hidden>
+      <button id="b-shield" data-k="shield">🛡️ Shield</button>
+      <button id="b-fifty" data-k="fifty">✂️ 50:50</button>
+    </div>
     <div class="feed" id="qfeed"></div>
   </div>
 </div>
@@ -254,12 +278,13 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
 /* online play: Supabase project (Project Settings > API) */
 const SB_URL='https://ydqktuggkxbtwinafitj.supabase.co',SB_KEY='sb_publishable_W658Rj1N9u5TxX-dh1tODA_gtTtZgdB';
 const SITE='https://gem-rush.in';
+const GOLD_CHANCE=.15,POWER_CHANCE=.4,POWER_FALL=7000,STREAK_N=3;
 const LV=[1,3,5],SETS=5,FALL=9000,QTIME=15,LOCK=0.8,TAPS=3,NOREPEAT=30,PORT=8765,MAXP=3;
 const $=s=>document.querySelector(s);
 const NATIVE=window.Android||null;
 const params=new URLSearchParams(location.search);
 const BANK={};for(const k of LV)BANK[k]=((window.QUESTIONS||{})[k]||'').trim().split('\n').filter(Boolean).map(l=>l.split('|'));
-const COL={1:{l:'#c8ffe8',m:'#34d99c',d:'#0b8a5f'},3:{l:'#d4ebff',m:'#4ba3ff',d:'#1c55c9'},5:{l:'#ffe2b0',m:'#ff7a3d',d:'#c9202c'}};
+const COL={1:{l:'#c8ffe8',m:'#34d99c',d:'#0b8a5f'},3:{l:'#d4ebff',m:'#4ba3ff',d:'#1c55c9'},5:{l:'#ffe2b0',m:'#ff7a3d',d:'#c9202c'},10:{l:'#fff8d1',m:'#ffcf4a',d:'#a8700b'}};
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const myPid=params.get('pid')||store.get('gemrush.pid',null)||('p'+Math.random().toString(36).slice(2,9));store.set('gemrush.pid',myPid);
 $('#name').value=store.get('gemrush.name','');
@@ -281,12 +306,42 @@ function gemSVG(lv){
 <polygon points="36,34 64,34 50,100" fill="url(#${id})"/><polygon points="64,34 96,34 50,100" fill="${c.d}" opacity=".9"/>
 <path d="M31 13H62" stroke="#fff" stroke-opacity=".75" stroke-width="3.5" stroke-linecap="round"/>
 <path class="k k1" d="M52 36 46 50 55 58 47 74"/><path class="k k2" d="M28 36 37 48 30 60M72 36 63 49 72 57"/>
-<text x="50" y="66" text-anchor="middle" font-family="'Baloo 2',system-ui,sans-serif" font-weight="800" font-size="32" fill="#fff" stroke="${c.d}" stroke-width="5" paint-order="stroke">${lv}</text></svg>`;
+<text x="50" y="66" text-anchor="middle" font-family="'Baloo 2',system-ui,sans-serif" font-weight="800" font-size="${lv>9?28:32}" fill="#fff" stroke="${c.d}" stroke-width="5" paint-order="stroke">${lv}</text>${lv===10?'<path class="spark" d="M84 6l3 7 7 3-7 3-3 7-3-7-7-3 7-3zM14 70l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#fff"/>':''}</svg>`;
 }
 $('#hero').innerHTML=LV.map(lv=>`<div class="lv${lv}" style="width:${lv===5?104:lv===3?88:74}px">${gemSVG(lv)}</div>`).join('');
 const sky=$('#sky');
 for(let i=0;i<46;i++){const s=document.createElement('i');s.className='star';const z=Math.random()*2+1;
   s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${z}px;height:${z}px;opacity:${.25+Math.random()*.6}`;sky.prepend(s)}
+
+/* ================= sound effects (made with Web Audio, no files) ================= */
+const SFX={ctx:null,on:store.get('gemrush.sound',true),
+  init(){if(!this.ctx){try{this.ctx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume().catch(()=>{})},
+  tone(f,d,type,v,when,to){if(!this.on||!this.ctx)return;try{const t=this.ctx.currentTime+(when||0),o=this.ctx.createOscillator(),g=this.ctx.createGain();
+    o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(to)o.frequency.exponentialRampToValueAtTime(to,t+d);
+    g.gain.setValueAtTime(v||.15,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(this.ctx.destination);o.start(t);o.stop(t+d+.03)}catch(e){}},
+  noise(d,v,hp){if(!this.on||!this.ctx)return;try{const c=this.ctx,b=c.createBuffer(1,Math.floor(c.sampleRate*d),c.sampleRate),a=b.getChannelData(0);
+    for(let i=0;i<a.length;i++)a[i]=(Math.random()*2-1)*(1-i/a.length);
+    const n=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();n.buffer=b;f.type='highpass';f.frequency.value=hp||1500;g.gain.value=v||.2;
+    n.connect(f);f.connect(g);g.connect(c.destination);n.start()}catch(e){}},
+  seq(notes,type,v,gap){notes.forEach((f,i)=>this.tone(f,.18,type||'triangle',v||.13,i*(gap||.07)))},
+  play(k){
+    if(k==='tap'){this.noise(.06,.16,2600);this.tone(1500,.05,'triangle',.06)}
+    else if(k==='shatter'){this.noise(.35,.28,1200);this.seq([1800,2400,3100],'triangle',.06,.04)}
+    else if(k==='right')this.seq([880,1320],'sine',.2,.1);
+    else if(k==='wrong')this.tone(220,.4,'sawtooth',.11,0,130);
+    else if(k==='shielded')this.seq([520,520,780],'triangle',.12,.08);
+    else if(k==='tick')this.tone(1000,.05,'square',.05);
+    else if(k==='taken')this.tone(330,.14,'triangle',.08,0,250);
+    else if(k==='power')this.seq([660,880,1100,1320],'triangle',.12,.06);
+    else if(k==='golden')this.seq([523,659,784,1047,1319],'triangle',.13,.08);
+    else if(k==='streak')this.seq([440,554,659,880,1109],'square',.07,.06);
+    else if(k==='set')this.tone(300,.45,'sine',.06,0,900);
+    else if(k==='win')this.seq([523,659,784,1047,784,1047],'triangle',.14,.13);
+    else if(k==='lose')this.seq([392,330,262],'triangle',.1,.18);
+  }};
+addEventListener('pointerdown',()=>SFX.init(),{capture:true});
+function sndLabel(){$('#b-snd').textContent=SFX.on?'🔊':'🔇'}
+$('#b-snd').onclick=()=>{SFX.on=!SFX.on;store.set('gemrush.sound',SFX.on);sndLabel();SFX.play('tap')};sndLabel();
 
 /* ================= native bridge (Android app) ================= */
 const nativeH={};
@@ -333,7 +388,7 @@ let hubWS=null,clientWS=null,clientAddr=null,reconnectTimer=0;
 /* ================= HOST ENGINE (runs only on the host phone) ================= */
 const E={players:[],gems:[],setNo:0,setStart:0,active:false,autoDone:false,timers:[],tick:0,running:false,game:0,phase:'lobby',rank:[],tie:false};
 const later=(fn,ms)=>{const t=setTimeout(fn,ms);E.timers.push(t);return t};
-function newPlayer(id,name,kind){return {id,name,kind,score:0,time:0,log:[],gem:null,done:false,last:0,away:false}}
+function newPlayer(id,name,kind){return {id,name,kind,score:0,time:0,log:[],gem:null,done:false,last:0,away:false,streak:0,x2:false,shield:0,fifty:0}}
 function hostSend(p,m){
   if(p.kind==='local')ui(m);
   else if(p.kind==='remote'&&!p.away&&hubWS&&hubWS.readyState===1)hubWS.send(JSON.stringify({to:p.id,data:m}));
@@ -347,7 +402,7 @@ function bcast(m){
 function stateMsg(){
   const m={t:'state',g:E.game,phase:E.phase,n:E.setNo,of:SETS,el:Math.round(performance.now()-E.setStart),
     gems:E.gems.map(g=>({lane:g.lane,lv:g.lv,cat:g.q[0],owner:g.owner,name:(E.players.find(p=>p.id===g.owner)||{}).name||'',gone:!!g.gone})),
-    players:scoreMsg().players};
+    players:scoreMsg().players,power:E.power};
   if(E.phase==='end'){m.rank=E.rank;m.tie=E.tie}
   return m;
 }
@@ -355,7 +410,8 @@ function sendState(){if(E.phase&&E.phase!=='lobby')bcast(stateMsg())}
 setInterval(()=>{if(role!=='host'||!hubWS)return;if(E.phase==='lobby')bcast(lobbyMsg());else sendState()},1000);
 function lobbyMsg(){return {t:'lobby',players:E.players.map(p=>({id:p.id,name:p.name,kind:p.kind,away:p.away}))}}
 function scoreMsg(){return {t:'score',players:E.players.map(p=>({id:p.id,name:p.name,score:p.score,log:p.log,away:p.away,
-  st:p.away?'offline':!p.gem?'choosing':p.done?'done':'answering '+p.gem.lv}))}}
+  st:p.away?'offline':!p.gem?'choosing':p.done?'done':'answering '+p.gem.lv,
+  streak:p.streak,x2:p.x2,sh:p.shield,ff:p.fifty}))}}
 function renderHostList(){
   $('#host-list').innerHTML=E.players.map(p=>`<li><span>${esc(p.name)}${p.kind==='local'?' (you, host)':''}</span><span class="${p.away?'wait':'on'}">${p.away?'Left':'Ready'}</span></li>`).join('')
     +Array.from({length:MAXP-E.players.length},()=>`<li><span class="wait">Empty seat</span><span class="wait">${$('#fill').checked?'Computer':'—'}</span></li>`).join('');
@@ -377,9 +433,7 @@ function onHub(raw){
     bcast(scoreMsg());checkSetDone();
   }else if(m.t==='_msg'){
     const p=E.players.find(x=>x.id===m.from);if(!p)return;const d=m.data||{};
-    if(d.t==='claim')claim(p,d.lane,false);
-    else if(d.t==='ans')answer(p,d.i);
-    else if(d.t==='needq'){if(p.gem&&!p.done&&p.qMsg)hostSend(p,p.qMsg);else if(p.resMsg)hostSend(p,p.resMsg)}
+    hostHandle(p,d);
   }
 }
 function setHostMode(m){
@@ -431,22 +485,26 @@ function startGameHost(solo){
   E.players=E.players.filter(p=>p.kind!=='bot'&&!p.away);
   if(solo||$('#fill').checked){const names=['Asha','Rohan','Meera'].filter(n=>!E.players.some(p=>p.name===n));
     while(E.players.length<MAXP){const b=newPlayer('bot'+E.players.length,names.shift(),'bot');b.risk=E.players.length%2?.7:.25;E.players.push(b)}}
-  E.players.forEach(p=>Object.assign(p,{score:0,time:0,log:[],gem:null,done:false,last:0}));
+  E.players.forEach(p=>Object.assign(p,{score:0,time:0,log:[],gem:null,done:false,last:0,streak:0,x2:false,shield:0,fifty:0}));
   hist.round++;saveHist();E.setNo=0;E.running=true;E.game++;
   bcast(lobbyMsg());nextSet();
 }
 function nextSet(){
   E.setNo++;E.autoDone=false;
-  E.players.forEach(p=>{p.gem=null;p.done=false;p.last=0;p.claimAt=3000+Math.random()*4500});
-  E.gems=LV.map((lv,lane)=>{const {id,q}=pickQ(lv);return {lv,lane,id,q,owner:null}});saveHist();
+  E.players.forEach(p=>{p.gem=null;p.done=false;p.last=0;p.claimAt=3000+Math.random()*4500;
+    p.powerAt=p.kind==='bot'&&Math.random()<.45?1800+Math.random()*4000:Infinity});
+  const golden=Math.random()<(params.has('gold')?+params.get('gold'):GOLD_CHANCE);   // rare golden gem replaces the 5-pointer: 10 points, tough question
+  E.gems=LV.map((lv,lane)=>{const {id,q}=pickQ(lv);return {lv:lane===2&&golden?10:lv,lane,id,q,owner:null}});saveHist();
+  E.power=Math.random()<(params.has('pow')?+params.get('pow'):POWER_CHANCE)?{kind:Math.random()<.5?'shield':'fifty',x:Math.random()<.5?33:67,owner:null,name:''}:null;
   E.setStart=performance.now();E.active=true;E.phase='play';
-  bcast({t:'set',g:E.game,n:E.setNo,of:SETS,el:0,gems:E.gems.map(g=>({lane:g.lane,lv:g.lv,cat:g.q[0]}))});
+  bcast({t:'set',g:E.game,n:E.setNo,of:SETS,el:0,gems:E.gems.map(g=>({lane:g.lane,lv:g.lv,cat:g.q[0]})),power:E.power});
   sendState();
 }
 function hostTick(){
   if(role!=='host'||!E.active)return;
   const t=performance.now()-E.setStart;
   E.players.forEach(p=>{if(p.kind==='bot'&&!p.gem&&t>p.claimAt)botClaim(p)});
+  E.players.forEach(p=>{if(p.kind==='bot'&&t>p.powerAt){p.powerAt=Infinity;claimPower(p)}});
   if(t>=FALL+250&&!E.autoDone){E.autoDone=true;autoAssign()}
 }
 setInterval(hostTick,100);
@@ -455,12 +513,15 @@ function claim(p,lane,auto){
   if(!E.active||!g||g.owner!==null||p.gem||p.away){if(p.kind!=='bot'&&!p.gem)hostSend(p,{t:'nope',lane});return false}
   g.owner=p.id;p.gem=g;
   bcast({t:'claim',g:E.game,n:E.setNo,lane,id:p.id,name:p.name,auto:!!auto});
+  p.shieldOn=false;p.fiftyHide=null;
   if(p.kind==='bot'){
-    const acc={1:.85,3:.62,5:.42}[g.lv],tt=2500+Math.random()*10500;
-    later(()=>record(p,Math.random()<acc?g.lv:-g.lv,tt/1000),tt);
+    let acc={1:.85,3:.62,5:.42,10:.35}[g.lv];const tt=2500+Math.random()*10500;
+    if(p.fifty>0&&g.lv>=3){p.fifty--;acc+=(1-acc)/2}
+    if(p.shield>0&&g.lv>=5){p.shield--;p.shieldOn=true}
+    later(()=>{if(!p.done)record(p,settle(p,Math.random()<acc),tt/1000)},tt);
   }else{
     const opts=g.q.slice(2);p.order=shuffle(opts);p.correct=opts[0];p.qAt=performance.now();
-    p.qMsg={t:'q',g:E.game,n:E.setNo,lane,lv:g.lv,cat:g.q[0],text:g.q[1],opts:p.order,auto:!!auto};p.resMsg=null;
+    p.qMsg={t:'q',g:E.game,n:E.setNo,lane,lv:g.lv,cat:g.q[0],text:g.q[1],opts:p.order,auto:!!auto,x2:p.x2,sh:p.shield,ff:p.fifty};p.resMsg=null;
     hostSend(p,p.qMsg);
     p.qTimer=later(()=>answer(p,-1),(QTIME+LOCK)*1000+(p.kind==='remote'?2500:400));
   }
@@ -477,15 +538,58 @@ function autoAssign(){
   E.gems.filter(g=>g.owner===null).forEach(g=>{g.gone=true;bcast({t:'gone',g:E.game,n:E.setNo,lane:g.lane})});
   sendState();
 }
+/* points for an answer, with streak bonus and shield; updates the streak */
+function settle(p,ok){
+  const lv=p.gem.lv,wasX2=p.x2;let pts;
+  p.x2=false;
+  if(ok){pts=lv*(wasX2?2:1);p.streak++;if(p.streak>=STREAK_N){p.x2=true;p.streak=0}}
+  else{pts=p.shieldOn?0:-lv;p.streak=0}
+  p.lastInfo={x2:wasX2,shielded:!ok&&p.shieldOn,armed:p.x2};
+  return pts;
+}
 function answer(p,i){
   if(p.kind==='bot'||!p.gem)return;
   if(p.done){if(p.resMsg)hostSend(p,p.resMsg);return}  // repeated answer: just send the result again
   clearTimeout(p.qTimer);
-  const ok=i>=0&&p.order[i]===p.correct,lv=p.gem.lv;
+  const ok=i>=0&&p.order[i]===p.correct;
   const secs=Math.min(Math.max((performance.now()-p.qAt)/1000-LOCK,0),QTIME);
-  p.resMsg={t:'res',g:E.game,n:E.setNo,ok,pts:ok?lv:-lv,correct:p.correct,i};
+  const pts=settle(p,ok);
+  p.resMsg={t:'res',g:E.game,n:E.setNo,ok,pts,correct:p.correct,i,...p.lastInfo};
   hostSend(p,p.resMsg);
-  record(p,ok?lv:-lv,secs);
+  record(p,pts,secs);
+}
+/* power-up bubble: first tap wins it */
+function claimPower(p){
+  const w=E.power;
+  if(!E.active||!w||w.owner||p.away||performance.now()-E.setStart>POWER_FALL+600){if(w&&w.owner&&p.kind!=='bot')hostSend(p,{t:'powerTaken',g:E.game,n:E.setNo,id:w.owner,name:w.name,kind:w.kind});return}
+  w.owner=p.id;w.name=p.name;p[w.kind]++;
+  bcast({t:'powerTaken',g:E.game,n:E.setNo,id:p.id,name:p.name,kind:w.kind});sendState();
+}
+/* use Shield or 50:50 on the current question */
+function usePower(p,kind){
+  if(!p.gem||p.done)return;
+  if(kind==='fifty'){
+    if(!p.fiftyHide){if(p.fifty<1)return;p.fifty--;
+      p.fiftyHide=shuffle(p.order.map((o,i)=>i).filter(i=>p.order[i]!==p.correct)).slice(0,2)}
+    hostSend(p,{t:'used',g:E.game,n:E.setNo,kind,hide:p.fiftyHide});
+  }else if(kind==='shield'){
+    if(!p.shieldOn){if(p.shield<1)return;p.shield--;p.shieldOn=true}
+    hostSend(p,{t:'used',g:E.game,n:E.setNo,kind});
+  }
+  sendState();
+}
+/* every request a player can send to the host */
+function hostHandle(p,d){
+  if(!p||!d)return;
+  if(d.t==='claim')claim(p,d.lane,false);
+  else if(d.t==='ans')answer(p,d.i);
+  else if(d.t==='power')claimPower(p);
+  else if(d.t==='use')usePower(p,d.kind);
+  else if(d.t==='needq'){
+    if(p.gem&&!p.done&&p.qMsg){hostSend(p,p.qMsg);
+      if(p.fiftyHide)hostSend(p,{t:'used',g:E.game,n:E.setNo,kind:'fifty',hide:p.fiftyHide});
+      if(p.shieldOn)hostSend(p,{t:'used',g:E.game,n:E.setNo,kind:'shield'})}
+    else if(p.resMsg)hostSend(p,p.resMsg)}
 }
 function record(p,pts,secs,silent){
   if(p.done)return;p.done=true;p.score+=pts;p.time+=secs;p.log.push(pts);p.last=pts;
@@ -559,9 +663,13 @@ function joinOnline(raw){
     close(){fake.readyState=3;try{client.removeChannel(ch)}catch(e){}}};
   ch.on('broadcast',{event:'down'},({payload:p})=>{
     if(clientWS!==fake||!p||(p.to!==myPid&&p.to!=='all'))return;
-    if(p.data&&p.data.t==='lobby'){gotLobby=true;if((p.data.players||[]).some(x=>x.id===myPid))inRoom=true}
-    if(p.data&&p.data.t==='state')inRoom=true;
-    ui(p.data);
+    const d=p.data||{};
+    if(d.t==='lobby'){gotLobby=true;inRoom=(d.players||[]).some(x=>x.id===myPid)}
+    if(d.t==='state'){gotLobby=true;inRoom=(d.players||[]).some(x=>x.id===myPid)}
+    if(!inRoom&&d.t!=='lobby'&&d.t!=='full'&&d.t!=='busy'&&p.to==='all'){
+      if(d.t==='state'&&$('#game').hidden)joinMsg('A game is already running in this room. Join when it finishes.',true);
+      return}
+    ui(d);
   });
   ch.subscribe(st=>{
     if(st==='SUBSCRIBED'){
@@ -626,7 +734,7 @@ $('#b-connect').onclick=async()=>{
   joinMsg('Connecting…');try{await connectClient(a)}catch(e){joinMsg('Could not reach '+a+'. Check you are on the same Wi-Fi or hotspot.',true)}
 };
 function sendToHost(m){
-  if(role==='host'){const me=E.players.find(p=>p.kind==='local');if(m.t==='claim')claim(me,m.lane,false);else if(m.t==='ans')answer(me,m.i)}
+  if(role==='host')hostHandle(E.players.find(p=>p.kind==='local'),m);
   else if(clientWS&&clientWS.readyState===1)clientWS.send(JSON.stringify(m));
 }
 
@@ -637,10 +745,11 @@ function applyState(m){
   if(m.players){view.players=m.players;renderChips()}
   if(m.phase==='end'){if(m.rank&&view.ended!==m.g){view.ended=m.g;onEnd(m)}return}
   if(m.g!==view.game||m.n!==view.setNo){
-    if(m.phase==='play'&&m.el<FALL+3000)startSetView({g:m.g,n:m.n,of:m.of,el:m.el,gems:m.gems});
+    if(m.phase==='play'&&m.el<FALL+3000)startSetView({g:m.g,n:m.n,of:m.of,el:m.el,gems:m.gems,power:m.power});
     else{view.game=m.g;view.setNo=m.n}
     if(view.setNo!==m.n)return;
   }
+  if(m.power&&m.power.owner&&view.power&&!view.power.done)onPowerView({id:m.power.owner,name:m.power.name,kind:m.power.kind});
   m.gems.forEach(s=>{const g=view.gems[s.lane];if(!g)return;
     if(s.owner&&g.owner!==s.owner)onClaimView({lane:s.lane,id:s.owner,name:s.name});
     else if(s.gone&&g.owner===null&&!g.gone)fadeGem(g)});
@@ -663,6 +772,8 @@ function ui(m){
     case 'q':if(m.g===view.game&&m.n===view.setNo&&!(qState&&qState.lane===m.lane))openQ(m);break;
     case 'res':showRes(m);break;
     case 'state':applyState(m);break;
+    case 'powerTaken':if(m.g===view.game&&m.n===view.setNo)onPowerView(m);break;
+    case 'used':onUsed(m);break;
     case 'score':view.players=m.players;renderChips();break;
     case 'setEnd':onSetEnd(m);break;
     case 'end':if(view.ended!==m.g){view.ended=m.g;onEnd(m)}break;
@@ -671,7 +782,7 @@ function ui(m){
 function status(t){$('#status').textContent=t;$('#status').hidden=!t}
 function startSetView(m){
   show('game');$('#qmodal').hidden=true;
-  view.gems.forEach(g=>g.el.remove());
+  view.gems.forEach(g=>g.el.remove());if(view.power&&view.power.el)view.power.el.remove();
   if(qState){clearInterval(qState.iv);clearTimeout(qState.retry);qState=null}
   view={...view,active:true,pending:-1,mine:false,answered:false,mineAt:0,game:m.g,setNo:m.n,start:performance.now()-(m.el||0)};
   tilt.base=tilt.beta;tilt.lane=-1;aim(-1);
@@ -685,17 +796,37 @@ function startSetView(m){
     el.addEventListener('pointerdown',e=>{e.preventDefault();tapGem(g)});
     el.style.transform='translate(-50%,-150px)';sky.appendChild(el);return g;
   });
-  status(tilt.seen?'Tap a gem 3 times, or tilt to grab it':'Tap a gem 3 times to grab it');
+  const g5=m.gems[2]||{};$('.lane.l5 b').textContent=g5.lv||5;$('.lane.l5').classList.toggle('gold',g5.lv===10);
+  view.power=null;if(m.power)makePower(m.power);
+  SFX.play(g5.lv===10?'golden':'set');
+  status(g5.lv===10?'✨ Golden 10-point gem! Grab it fast':tilt.seen?'Tap a gem 3 times, or tilt to grab it':'Tap a gem 3 times to grab it');
+}
+const PW_ICON={shield:'<svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5z" fill="#fff"/><path d="M8.5 12l2.5 2.5 4.5-5" stroke="#5b3bd6" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',fifty:'50:50'};
+function makePower(d){
+  const el=document.createElement('div');el.className='pw';el.style.left=d.x+'%';
+  el.innerHTML=PW_ICON[d.kind]+'<div class="tag"></div>';
+  el.setAttribute('aria-label',d.kind==='shield'?'Shield power-up':'50:50 power-up');
+  const w=view.power={...d,el,owner:d.owner||null,gone:false,pending:false};
+  el.addEventListener('pointerdown',e=>{e.preventDefault();if(!view.active||w.owner||w.pending||w.gone)return;w.pending=true;SFX.play('tap');sendToHost({t:'power'})});
+  el.style.transform='translateY(-80px)';sky.appendChild(el);
+  if(w.owner)onPowerView({id:w.owner,name:d.name,kind:d.kind});
+}
+function onPowerView(m){
+  const w=view.power;if(!w||w.done)return;w.owner=m.id;w.pending=false;w.done=true;
+  if(m.id===myPid){SFX.play('power');buzz(40);w.el.classList.add('fade');setTimeout(()=>w.el.remove(),400);
+    status(m.kind==='shield'?'🛡️ You got a Shield! Use it on your next question.':'✂️ You got 50:50! Use it on your next question.')}
+  else{w.el.classList.add('taken');w.el.querySelector('.tag').textContent=m.name+' got it';setTimeout(()=>{w.el.classList.add('fade');setTimeout(()=>w.el.remove(),500)},900)}
 }
 function tapGem(g){
   if(!view.active||view.mine||view.pending>=0||g.owner!==null)return;
   g.taps++;buzz(12);g.el.classList.add('hit');setTimeout(()=>g.el.classList.remove('hit'),90);
+  SFX.play('tap');
   if(g.taps<TAPS)g.el.classList.add('t'+g.taps);else{view.pending=g.lane;sendToHost({t:'claim',lane:g.lane})}
 }
 function onClaimView(m){
   const g=view.gems[m.lane];if(!g)return;g.owner=m.id;
-  if(m.id===myPid){view.mine=true;view.mineAt=performance.now();view.pending=-1;aim(-1);buzz(40);shatter(g)}
-  else{
+  if(m.id===myPid){view.mine=true;view.mineAt=performance.now();view.pending=-1;aim(-1);buzz(40);SFX.play('shatter');shatter(g)}
+  else{SFX.play('taken');
     if(view.pending===m.lane)view.pending=-1;
     g.el.classList.add('taken');g.el.querySelector('.tag').textContent=m.name+' took it';
     setTimeout(()=>fadeGem(g),900);
@@ -717,6 +848,9 @@ function frame(){
   const t=performance.now()-view.start,H=sky.clientHeight;
   view.gems.forEach(g=>{if(g.gone)return;const end=H-g.el.offsetHeight-30;
     g.el.style.transform=`translate(-50%,${-150+Math.min(t/FALL,1)*(end+150)}px)`});
+  const w=view.power;
+  if(w&&!w.done){if(t>POWER_FALL){w.done=true;w.el.classList.add('fade');setTimeout(()=>w.el.remove(),500)}
+    else w.el.style.transform=`translateY(${-80+(t/POWER_FALL)*(H+40)}px)`}
   if(!view.mine&&view.pending<0&&tilt.seen)checkTilt();
 }
 requestAnimationFrame(frame);
@@ -735,8 +869,13 @@ addEventListener('keydown',e=>{const lane={ArrowLeft:0,ArrowUp:1,ArrowRight:2}[e
 let qState=null;
 function openQ(m){
   if(qState)clearInterval(qState.iv);
-  const bd=$('#qbadge');bd.textContent=m.lv+(m.lv>1?' points':' point');bd.className='badge lv'+m.lv;
-  $('#qcat').textContent=(m.auto?'Auto-assigned · ':'')+m.cat;
+  const bd=$('#qbadge');bd.textContent=(m.lv===10?'✨ ':'')+m.lv+(m.lv>1?' points':' point');bd.className='badge lv'+m.lv;
+  $('#qcat').innerHTML='';$('#qcat').textContent=(m.auto?'Auto-assigned · ':'')+m.cat+' ';
+  if(m.x2){const x=document.createElement('span');x.className='xb';x.textContent='🔥 ×2';$('#qcat').appendChild(x)}
+  const row=$('#pwrow'),bs=$('#b-shield'),bf=$('#b-fifty');
+  bs.hidden=!(m.sh>0);bf.hidden=!(m.ff>0);row.hidden=bs.hidden&&bf.hidden;
+  [bs,bf].forEach(b=>{b.disabled=false;b.classList.remove('on')});
+  bs.textContent='🛡️ Shield'+(m.sh>1?` (${m.sh})`:'');bf.textContent='✂️ 50:50'+(m.ff>1?` (${m.ff})`:'');
   $('#qtext').textContent=m.text;
   const box=$('#qopts');
   box.innerHTML=m.opts.map((_,i)=>`<button class="opt" data-i="${i}"><b>${'ABCD'[i]}</b><span></span></button>`).join('');
@@ -744,11 +883,22 @@ function openQ(m){
   box.classList.add('lock');
   const fd=$('#qfeed');fd.textContent='Get ready…';fd.className='feed';
   $('#qmodal').hidden=false;
-  const q=qState={over:false,opts:m.opts,lv:m.lv,iv:0,t0:0,lane:m.lane,retry:0};
+  const q=qState={over:false,opts:m.opts,lv:m.lv,iv:0,t0:0,lane:m.lane,retry:0,lastTick:99};
   ring(QTIME);
   setTimeout(()=>{if(q!==qState||q.over)return;box.classList.remove('lock');fd.textContent='';q.t0=performance.now();
-    q.iv=setInterval(()=>{const left=QTIME-(performance.now()-q.t0)/1000;ring(left);if(left<=0)pick(-1)},100)},LOCK*1000);
+    q.iv=setInterval(()=>{const left=QTIME-(performance.now()-q.t0)/1000;ring(left);
+      const sec=Math.ceil(left);if(sec<=5&&sec>0&&sec<q.lastTick){q.lastTick=sec;SFX.play('tick')}
+      if(left<=0)pick(-1)},100)},LOCK*1000);
   box.onclick=e=>{const b=e.target.closest('.opt');if(b)pick(+b.dataset.i)};
+}
+$('#pwrow').onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled||!qState||qState.over)return;
+  b.disabled=true;sendToHost({t:'use',kind:b.dataset.k});
+  if(role==='client'){const q=qState;setTimeout(()=>{if(qState===q&&!q.over&&!b.classList.contains('on'))b.disabled=false},2500)}};
+function onUsed(m){
+  const q=qState;if(!q||m.g!==view.game||m.n!==view.setNo)return;
+  if(m.kind==='fifty'){$('#b-fifty').classList.add('on');$('#b-fifty').disabled=true;$('#b-fifty').textContent='✂️ Used';
+    (m.hide||[]).forEach(i=>{const b=$('#qopts').children[i];if(b){b.classList.add('cut');b.disabled=true}});SFX.play('power')}
+  else if(m.kind==='shield'){$('#b-shield').classList.add('on');$('#b-shield').disabled=true;$('#b-shield').textContent='🛡️ Shield on';SFX.play('power')}
 }
 function ring(left){$('#qtimer').style.setProperty('--p',Math.max(left,0)/QTIME);$('#qsec').textContent=Math.max(0,Math.ceil(left))}
 function pick(i){
@@ -763,15 +913,17 @@ function showRes(m){
   const q=qState;if(!q||q.got)return;q.got=true;q.over=true;clearInterval(q.iv);clearTimeout(q.retry);view.answered=true;
   [...$('#qopts').children].forEach((b,k)=>{b.disabled=true;b.style.borderColor='';
     if(q&&q.opts[k]===m.correct)b.classList.add('right');else if(k===m.i)b.classList.add('wrong')});
-  const fd=$('#qfeed'),lv=Math.abs(m.pts);
-  fd.textContent=m.i<0?`Time up · −${lv}`:m.ok?`Correct · +${lv}`:`Wrong · −${lv}`;
+  const fd=$('#qfeed'),v=Math.abs(m.pts);
+  fd.textContent=m.ok?`Correct · +${v}${m.x2?' (🔥 double!)':''}`:m.shielded?`${m.i<0?'Time up':'Wrong'} · 🛡️ Shield saved you: 0`:`${m.i<0?'Time up':'Wrong'} · −${v}`;
+  if(m.armed)fd.textContent+=' · 🔥 3 in a row! Next gem ×2';
   fd.className='feed '+(m.ok?'good':'bad');buzz(m.ok?30:[60,40,60]);
+  SFX.play(m.ok?'right':m.shielded?'shielded':'wrong');if(m.armed)setTimeout(()=>SFX.play('streak'),350);
   setTimeout(()=>{if(qState===q){$('#qmodal').hidden=true;qState=null}},1900);
 }
 function renderChips(){
   $('#chips').innerHTML=view.players.map(p=>{
     const dots=Array.from({length:SETS},(_,i)=>{const v=p.log[i];return `<i class="${v===undefined?'':v>0?'up':v<0?'dn':'z'}"></i>`}).join('');
-    return `<div class="chip${p.id===myPid?' me':''}"><div class="nm">${esc(p.name)}</div><div class="sc">${p.score}</div><div class="st">${p.st}</div><div class="dots">${dots}</div></div>`}).join('');
+    return `<div class="chip${p.id===myPid?' me':''}"><div class="nm">${esc(p.name)}</div><div class="sc">${p.score}</div><div class="st">${p.st}</div><div class="pu">${p.x2?'🔥×2 ':p.streak?'🔥'+p.streak+' ':''}${'🛡️'.repeat(Math.min(p.sh||0,3))}${p.ff?'✂️'.repeat(Math.min(p.ff,3)):''}</div><div class="dots">${dots}</div></div>`}).join('');
   const me=view.players.find(p=>p.id===myPid);
   if(me&&me.st==='done'){const w=view.players.filter(p=>p.st.startsWith('answering')||p.st==='choosing').map(p=>p.name);if(w.length)status(`Waiting for ${w.join(' and ')}…`)}
 }
@@ -785,7 +937,7 @@ function onSetEnd(m){
 function onEnd(m){
   view.gems.forEach(g=>g.el.remove());view.gems=[];view.active=false;show('s-end');
   const top=m.rank[0];
-  $('#winner').textContent=top.id===myPid?'You win!':`${top.name} wins`;
+  $('#winner').textContent=top.id===myPid?'You win!':`${top.name} wins`;SFX.play(top.id===myPid?'win':'lose');
   $('#tienote').textContent=m.tie?'Tied on points, so the faster total answer time wins.':'Highest score wins. A tie goes to the faster player.';
   $('#rank').innerHTML=m.rank.map((p,i)=>`<li class="${p.id===myPid?'me':''}"><span class="pos">${i+1}</span><span class="who">${esc(p.name)} · ${p.time} s</span><span class="log">${p.log.map(v=>`<i class="${v>0?'up':v<0?'dn':'z'}">${sign(v)}</i>`).join('')}</span><span class="tot">${p.score}</span></li>`).join('');
   const host=role==='host';
