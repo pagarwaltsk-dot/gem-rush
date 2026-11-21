@@ -17,6 +17,10 @@
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none}
 [hidden]{display:none!important}
+/* browser only: if the phone auto-rotates to landscape, turn the game back upright */
+html.rot90 body,html.rot270 body{position:fixed;top:0;left:0;width:100vh;height:100vw;transform-origin:0 0;overflow:hidden}
+html.rot90 body{transform:translateY(100vh) rotate(-90deg)}
+html.rot270 body{transform:translateX(100vw) rotate(90deg)}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer}
 button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -342,6 +346,29 @@ const SFX={ctx:null,on:store.get('gemrush.sound',true),
 addEventListener('pointerdown',()=>SFX.init(),{capture:true});
 function sndLabel(){$('#b-snd').textContent=SFX.on?'🔊':'🔇'}
 $('#b-snd').onclick=()=>{SFX.on=!SFX.on;store.set('gemrush.sound',SFX.on);sndLabel();SFX.play('tap')};sndLabel();
+
+/* ================= keep the game upright (browser) ================= */
+/* The Android app is locked to portrait already. In a browser we ask for full screen + portrait lock
+   on the first button tap; where that isn't allowed (e.g. iPhone), we counter-rotate the page instead. */
+let lockTried=false;
+async function lockPortrait(){
+  if(NATIVE||lockTried)return;lockTried=true;
+  try{
+    if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen({navigationUI:'hide'});
+    if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('portrait');
+  }catch(e){}
+}
+addEventListener('pointerdown',e=>{if(e.target.closest('button,.gem,.pw'))lockPortrait()},{capture:true});
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)lockTried=false});
+function keepUpright(){
+  const root=document.documentElement;root.classList.remove('rot90','rot270');
+  if(NATIVE||!matchMedia('(pointer:coarse)').matches||innerWidth<=innerHeight)return;
+  const a=(screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(window.orientation||0);
+  if(a===90)root.classList.add('rot90');else if(a===270||a===-90)root.classList.add('rot270');
+}
+addEventListener('resize',keepUpright);addEventListener('orientationchange',()=>setTimeout(keepUpright,50));
+if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener('change',keepUpright);
+keepUpright();
 
 /* ================= native bridge (Android app) ================= */
 const nativeH={};
