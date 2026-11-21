@@ -157,6 +157,41 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
 .log{grid-area:log;display:flex;gap:6px;flex-wrap:wrap}
 .log i{font-style:normal;font-weight:800;font-size:14px}.log .up{color:var(--good)}.log .dn{color:var(--bad)}.log .z{color:var(--mute)}
 .tot{grid-area:tot;font:800 32px var(--hd)}
+.subj{display:flex;flex-wrap:wrap;gap:8px}
+.subj button{min-height:40px;padding:0 14px;border-radius:99px;border:2px solid var(--line);background:transparent;font-weight:800;font-size:14px}
+.subj button[aria-pressed=true]{border-color:var(--gold);background:rgba(255,207,74,.15);color:var(--gold)}
+.subj.ro button{pointer-events:none}
+.gem.rev .shape{filter:drop-shadow(0 0 10px #ff3b5c) drop-shadow(0 0 4px #ff3b5c)}
+.gem.rev .hint{background:#ff3b5c}
+.gem.heist .hint{background:#7d5cff}
+#predbox{position:absolute;top:8px;left:8px;right:8px;z-index:5;display:grid;gap:6px;pointer-events:none}
+.pred{pointer-events:auto;display:flex;align-items:center;gap:8px;background:rgba(10,7,32,.85);border:1px solid var(--line);border-radius:14px;padding:6px 10px;font-size:14px;font-weight:700}
+.pred span{flex:1}
+.pred button{min-width:44px;min-height:38px;border-radius:10px;border:2px solid var(--line);background:transparent;font-size:18px}
+#prankbar{display:flex;gap:6px;justify-content:center;margin-top:6px;flex-wrap:wrap}
+#prankbar button{min-height:38px;padding:0 12px;border-radius:99px;border:2px solid #ff4d8d;background:rgba(255,77,141,.15);font-weight:800;font-size:14px}
+#prankbar button.sel{background:#ff4d8d;color:#fff}
+#prankbar .hintp{width:100%;text-align:center;font-size:13px;color:#ff9ec0}
+.chip.target{border-color:#ff4d8d;box-shadow:0 0 0 3px rgba(255,77,141,.4);cursor:pointer}
+#cloudfx{position:fixed;inset:0;z-index:40;pointer-events:none;display:grid;place-items:center;background:rgba(238,241,255,.86);backdrop-filter:blur(8px);animation:cf .3s ease-out}
+#cloudfx svg{width:min(80vw,420px)}#cloudfx b{position:absolute;bottom:22%;font:800 26px var(--hd);color:#3b2a8a}
+@keyframes cf{from{opacity:0}}
+.crownbox{text-align:center}
+#crown svg{width:100%;max-width:360px;height:auto}
+.title{font:800 28px var(--hd);color:var(--gold)}
+.mrow{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.mrow:last-child{border-bottom:0}.mrow i{width:14px;height:14px;border-radius:4px}.mrow span{flex:1}.mrow b{font:800 18px var(--hd)}
+.fun{font:800 22px var(--hd);color:var(--gold);align-self:center}
+select{width:100%;min-height:48px;border-radius:14px;border:2px solid var(--line);background:#1a1240;color:var(--ink);padding:0 12px;font-size:16px}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg2 button{min-height:46px;border-radius:14px;border:2px solid var(--line);background:transparent;font-weight:800}
+.seg2 button[aria-pressed=true]{border-color:var(--gold);background:rgba(255,207,74,.12)}
+.lb{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.lb li{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.06)}
+.lb li.me{border:2px solid var(--gold)}
+.lb .r{font:800 20px var(--hd);color:var(--gold)}.lb .n{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lb .n small{display:block;font-weight:600;color:var(--mute)}.lb .pt{font:800 20px var(--hd)}
+.tier{font:800 12px Nunito,system-ui,sans-serif;padding:1px 8px;border-radius:99px;margin-left:6px}
+.t-b{background:#a8714a}.t-s{background:#8f9bb3;color:#111}.t-g{background:#ffcf4a;color:#2a1a00}.t-d{background:#6fe3ff;color:#06283a}
 @media (prefers-reduced-motion:reduce){.gem svg{animation:none}.shard{display:none}.card{animation:none}}
 </style>
 </head>
@@ -171,10 +206,12 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
       <label class="f" for="name">Your name</label>
       <input type="text" id="name" maxlength="12" placeholder="Type your name" autocomplete="off">
     </div>
+    <div class="panel"><h2>Subjects</h2><div class="subj" id="subj-start"></div></div>
     <button class="big" id="b-online">Play online with friends</button>
     <button class="big alt" id="b-join">Join a game</button>
     <button class="ghost" id="b-host">Host on hotspot (no internet)</button>
     <button class="ghost" id="b-solo">Practice against the computer</button>
+    <div class="row"><button class="ghost" id="b-me">💎 My gems</button><button class="ghost" id="b-board">🏆 Leaderboard</button></div>
     <a class="ghost lnk" id="getapp" href="https://github.com/pagarwaltsk-dot/gem-rush/releases/latest/download/GemRush.apk" hidden>Get the Android app</a>
     <div class="panel">
       <h2>How to play</h2>
@@ -183,7 +220,8 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
         <li>Gems keep changing shape as they fall. Grab one <b>only while it's round</b>: tap it 3 times, or tilt your phone (left = 1, back = 3, right = 5). Tapping a diamond resets it, and tapping wildly freezes you for a second!</li>
         <li>Once a gem is taken, nobody else can have it. Answer within 15 seconds.</li>
         <li>Right answer: + points. Wrong or time up: − points. 5 sets per game.</li>
-        <li>Look out for the rare golden 10 gem, and grab the purple bubbles: 🛡️ Shield (a wrong answer costs nothing) and ✂️ 50:50. Three right in a row makes your next gem worth double!</li>
+        <li>Look out for the rare golden 10 gem, and grab the purple bubbles: 🛡️ Shield (a wrong answer costs nothing), ✂️ 50:50, and pranks to send at others: ☁️ Cloud, 🔀 Shuffle, 🧊 Ice. Three right in a row makes your next gem worth double!</li>
+        <li>🔁 Red revenge gems bring back questions someone got wrong before, with bonus points. If someone misses a 5 or golden gem, it drops back down: catch it for a free bonus! While others answer, guess 👍/👎 whether they'll get it right for +1.</li>
       </ol>
     </div>
   </div>
@@ -200,6 +238,7 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
     </div>
     <div class="row" id="share-row" hidden><a class="big wa" id="b-wa" target="_blank" rel="noopener">Share on WhatsApp</a><button class="ghost" id="b-copy" style="flex:0 0 120px">Copy link</button></div>
     <ul class="list" id="host-list"></ul>
+    <div class="panel"><h2>Subjects</h2><div class="subj" id="subj-host"></div></div>
     <div class="panel switch"><span>Fill empty seats with computer players</span><input type="checkbox" id="fill" checked></div>
     <button class="ghost" id="b-tilt">Turn on tilt control</button>
     <button class="big" id="b-start">Start game</button>
@@ -226,6 +265,7 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
     <p class="msg" id="join-msg"></p>
     <div id="join-wait" hidden>
       <ul class="list" id="join-list"></ul>
+      <p class="note" id="join-subj" style="margin-top:8px"></p>
       <p class="note" style="margin-top:10px">Waiting for the host to start…</p>
     </div>
     <button class="ghost" id="b-tilt2">Turn on tilt control</button>
@@ -238,9 +278,11 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
     <button class="snd" id="b-snd" aria-label="Sound on or off">🔊</button>
     <div class="setno" id="setno">Set 1 of 5</div>
     <div id="chips"></div>
+    <div id="prankbar" hidden></div>
   </div>
   <div id="sky">
     <div class="lanebg"><i></i><i></i><i></i></div>
+    <div id="predbox"></div>
     <div id="status"></div>
     <div id="toast"></div>
   </div>
@@ -251,6 +293,7 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
   </div>
 </section>
 
+<div id="cloudfx" hidden aria-hidden="true"><svg viewBox="0 0 200 120"><path d="M50 100h105a35 35 0 0 0 0-70 48 48 0 0 0-92-6A38 38 0 0 0 50 100z" fill="#eef1ff"/><path d="M40 108h90a26 26 0 0 0 0-52 36 36 0 0 0-70-4A28 28 0 0 0 40 108z" fill="#fff"/></svg><b>☁️ Cloudy!</b></div>
 <div id="qmodal" hidden>
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="qtext">
     <div class="qhead">
@@ -277,9 +320,55 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
       <h2>Question bank</h2>
       <p class="note" style="text-align:left" id="fresh"></p>
     </div>
+    <p class="msg" id="lb-note"></p>
+    <div class="panel" id="ghost-share" hidden>
+      <h2>👻 Challenge a friend</h2>
+      <p class="note" style="text-align:left">Send your ghost. Your friend plays the same gems and races your exact moves.</p>
+      <div class="row" style="margin-top:10px"><a class="big wa" id="b-gwa" target="_blank" rel="noopener">Send on WhatsApp</a><button class="ghost" id="b-gcopy" style="flex:0 0 120px">Copy link</button></div>
+    </div>
     <button class="big" id="b-again" hidden>Play again</button>
     <p class="msg" id="end-wait" hidden>Waiting for the host to start the next game…</p>
     <button class="ghost" id="b-home">Back to start</button>
+  </div>
+</section>
+
+<section class="screen" id="s-me" hidden>
+  <div class="col">
+    <h1 class="s">My gems</h1>
+    <div class="panel crownbox"><div id="crown"></div><div class="title" id="me-title"></div><p class="note" id="me-total"></p></div>
+    <div class="panel" id="me-list"></div>
+    <div class="panel">
+      <h2>Leaderboard name</h2>
+      <p class="note" style="text-align:left">For safety, the public leaderboard shows a fun name, never your real name.</p>
+      <div class="row" style="margin-top:10px"><div class="fun" id="me-fun"></div><button class="ghost" id="b-reroll" style="flex:0 0 110px">🎲 New</button></div>
+      <label class="f" for="me-state" style="margin-top:12px">Your state (for State vs State)</label>
+      <select id="me-state"></select>
+    </div>
+    <button class="ghost" id="b-me-back">Back</button>
+  </div>
+</section>
+
+<section class="screen" id="s-board" hidden>
+  <div class="col">
+    <h1 class="s">Leaderboard</h1>
+    <p class="sub" id="lb-sub">This week · resets every Monday</p>
+    <div class="seg2"><button id="tab-p" aria-pressed="true">Players</button><button id="tab-s" aria-pressed="false">States</button></div>
+    <p class="msg" id="lb-msg"></p>
+    <ol class="lb" id="lb-list"></ol>
+    <div class="panel" id="lb-me"></div>
+    <button class="ghost" id="b-board-me">💎 Change my name or state</button>
+    <button class="ghost" id="b-board-back">Back</button>
+  </div>
+</section>
+
+<section class="screen" id="s-ghost" hidden>
+  <div class="col">
+    <div class="hero" style="font-size:90px;height:auto">👻</div>
+    <h1 class="s" id="gh-title">Ghost challenge</h1>
+    <p class="sub" id="gh-sub"></p>
+    <div><label class="f" for="gname">Your name</label><input type="text" id="gname" maxlength="12" placeholder="Type your name" autocomplete="off"></div>
+    <button class="big" id="b-ghost-go">Race the ghost</button>
+    <button class="ghost" id="b-ghost-back">Not now</button>
   </div>
 </section>
 
@@ -292,7 +381,8 @@ summary{cursor:pointer;font-weight:700;color:var(--mute)}
 /* online play: Supabase project (Project Settings > API) */
 const SB_URL='https://ydqktuggkxbtwinafitj.supabase.co',SB_KEY='sb_publishable_W658Rj1N9u5TxX-dh1tODA_gtTtZgdB';
 const SITE='https://gem-rush.in';
-const GOLD_CHANCE=.15,POWER_CHANCE=.4,POWER_FALL=8000,STREAK_N=3;
+const GOLD_CHANCE=.15,POWER_CHANCE=.4,POWER_FALL=8000,STREAK_N=3,REV_CHANCE=.35,HEIST_FALL=8000,PRED_WINDOW=9000;
+const PRANKS=['cloud','shuffle','ice'],PK_ICON={cloud:'☁️',shuffle:'🔀',ice:'🧊',shield:'🛡️',fifty:'✂️'},PK_NAME={cloud:'Cloud',shuffle:'Shuffle',ice:'Ice',shield:'Shield',fifty:'50:50'};
 /* shape-changing gems: a gem can be grabbed only while it is round.
    m = {ph: offset ms, per: cycle ms, rd: round ms}; t = ms since the set started */
 const isRound=(m,t)=>!!m&&t>=0&&((t-m.ph)%m.per+m.per)%m.per<m.rd;
@@ -315,7 +405,7 @@ $('#jname').value=$('#name').value;
 $('#jname').oninput=()=>{$('#name').value=$('#jname').value};
 $('#name').oninput=()=>{$('#jname').value=$('#name').value};
 const myName=()=>{const n=$('#name').value.trim().slice(0,12)||'Player';store.set('gemrush.name',n);return n};
-const SCREENS=['s-start','s-host','s-join','game','s-end'];
+const SCREENS=['s-start','s-host','s-join','game','s-end','s-me','s-board','s-ghost'];
 const show=id=>{SCREENS.forEach(s=>$('#'+s).hidden=s!==id);if(id!=='game')$('#qmodal').hidden=true};
 const buzz=ms=>{try{if(NATIVE&&NATIVE.vibrate)NATIVE.vibrate(Array.isArray(ms)?ms[0]:ms);else if(navigator.vibrate)navigator.vibrate(ms)}catch(e){}};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -421,8 +511,9 @@ if(NATIVE){try{NATIVE.tilt(true)}catch(e){}}
 /* ================= no-repeat question history (host phone) ================= */
 let hist=store.get('gemrush.v1',{round:0,used:{}});if(!hist||!hist.used)hist={round:0,used:{}};
 const saveHist=()=>store.set('gemrush.v1',hist);
-function pickQ(lv){
-  const pool=BANK[lv].map((q,i)=>({id:lv+'-'+i,q}));
+function pickQ(lv,subjects){
+  let pool=BANK[lv].map((q,i)=>({id:lv+'-'+i,q}));
+  if(subjects&&subjects.length){const f=pool.filter(p=>subjects.includes(p.q[0]));if(f.length)pool=f}
   const fresh=pool.filter(p=>hist.used[p.id]===undefined||hist.round-hist.used[p.id]>=NOREPEAT);
   const p=fresh.length?fresh[Math.floor(Math.random()*fresh.length)]
     :pool.reduce((a,b)=>(hist.used[a.id]??-1)<=(hist.used[b.id]??-1)?a:b);
@@ -430,6 +521,49 @@ function pickQ(lv){
 }
 const freshCount=lv=>BANK[lv].filter((_,i)=>{const u=hist.used[lv+'-'+i];return u===undefined||hist.round+1-u>=NOREPEAT}).length;
 const shuffle=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(x=>x[1]);
+const qById=id=>{const m=/^(1|3|5)-(\d+)$/.exec(id||'');if(!m)return null;const q=BANK[+m[1]][+m[2]];return q?{id,q,lv:+m[1]}:null};
+
+/* ================= subjects ================= */
+const CATS=[...new Set(LV.flatMap(lv=>BANK[lv].map(q=>q[0])))];
+const CAT_COL={Science:'#34d99c',Maths:'#ff7a3d',GK:'#ffcf4a',India:'#ff9a3d',Geography:'#4ba3ff',English:'#ff6fae',Animals:'#9be15d',Space:'#9b7bff',Sports:'#3dd6d0',Computers:'#c0c8e0'};
+let subjects=store.get('gemrush.subjects',[]).filter(c=>CATS.includes(c));
+function renderSubj(){
+  ['#subj-start','#subj-host'].forEach(sel=>{$(sel).innerHTML=`<button data-c="" aria-pressed="${!subjects.length}">All</button>`+
+    CATS.map(c=>`<button data-c="${esc(c)}" aria-pressed="${subjects.includes(c)}">${esc(c)}</button>`).join('')});
+}
+function subjClick(e){const b=e.target.closest('button');if(!b)return;const c=b.dataset.c;
+  if(!c)subjects=[];else subjects=subjects.includes(c)?subjects.filter(x=>x!==c):[...subjects,c];
+  if(subjects.length===CATS.length)subjects=[];
+  store.set('gemrush.subjects',subjects);renderSubj();if(role==='host'&&E.phase==='lobby')bcast(lobbyMsg())}
+$('#subj-start').onclick=subjClick;$('#subj-host').onclick=subjClick;renderSubj();
+const subjText=list=>list&&list.length?list.join(', '):'All subjects';
+
+/* ================= my gems (crown), fun name, state ================= */
+const ADJ=['Swift','Golden','Brave','Clever','Mighty','Lucky','Happy','Shiny','Jolly','Speedy','Bright','Cosmic','Fearless','Sunny','Wise','Zippy','Royal','Bold','Calm','Daring'];
+const ANI=['Rhino','Tiger','Owl','Panda','Dolphin','Falcon','Elephant','Peacock','Leopard','Otter','Koala','Eagle','Fox','Turtle','Gibbon','Rabbit','Yak','Parrot','Panther','Squirrel'];
+const STATES=['Andaman and Nicobar','Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chandigarh','Chhattisgarh','Dadra Nagar Haveli and Daman Diu','Delhi','Goa','Gujarat','Haryana','Himachal Pradesh','Jammu and Kashmir','Jharkhand','Karnataka','Kerala','Ladakh','Lakshadweep','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Puducherry','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
+const funName=()=>ADJ[Math.floor(Math.random()*ADJ.length)]+' '+ANI[Math.floor(Math.random()*ANI.length)]+' '+(1+Math.floor(Math.random()*99));
+let me={fun:store.get('gemrush.fun',null)||funName(),state:store.get('gemrush.state','')};store.set('gemrush.fun',me.fun);
+let crown=store.get('gemrush.crown',{});
+function addGem(cat){crown[cat]=(crown[cat]||0)+1;store.set('gemrush.crown',crown)}
+const TITLES=[[400,'Gem Legend'],[150,'Gem Master'],[50,'Gem Expert'],[10,'Gem Hunter'],[0,'Gem Finder']];
+function renderMe(){
+  const tot=CATS.reduce((a,c)=>a+(crown[c]||0),0),title=TITLES.find(t=>tot>=t[0])[1];
+  const mx=Math.max(1,...CATS.map(c=>crown[c]||0)),n=CATS.length,W=360,base=150;
+  const gems=CATS.map((c,i)=>{const v=crown[c]||0,h=18+Math.sqrt(v/mx)*82,w=W/(n+1)*.62,x=W/(n+1)*(i+1),col=CAT_COL[c]||'#fff';
+    return `<g opacity="${v?1:.25}"><polygon points="${x},${base-h} ${x+w/2},${base-h*.72} ${x+w/2},${base} ${x-w/2},${base} ${x-w/2},${base-h*.72}" fill="${col}"/><polygon points="${x},${base-h} ${x+w/2},${base-h*.72} ${x},${base-h*.6}" fill="#fff" opacity=".45"/></g>`}).join('');
+  $('#crown').innerHTML=`<svg viewBox="0 0 ${W} 200" role="img" aria-label="Crown with a crystal for each subject">${gems}<path d="M14 150h332l-14 40H28z" fill="#ffcf4a"/><path d="M14 150h332l-3 9H17z" fill="#fff3b0"/>${[60,120,180,240,300].map(x=>`<circle cx="${x}" cy="170" r="6" fill="#c9202c"/>`).join('')}</svg>`;
+  $('#me-title').textContent=title;
+  $('#me-total').textContent=tot?`${tot} right answers collected`:'Answer questions right to grow your crystals!';
+  $('#me-list').innerHTML=CATS.map(c=>`<div class="mrow"><i style="background:${CAT_COL[c]||'#fff'}"></i><span>${esc(c)}</span><b>${crown[c]||0}</b></div>`).join('');
+  $('#me-fun').textContent=me.fun;
+  $('#me-state').innerHTML='<option value="">Choose your state</option>'+STATES.map(x=>`<option${x===me.state?' selected':''}>${x}</option>`).join('');
+}
+$('#b-reroll').onclick=()=>{me.fun=funName();store.set('gemrush.fun',me.fun);$('#me-fun').textContent=me.fun};
+$('#me-state').onchange=()=>{me.state=$('#me-state').value;store.set('gemrush.state',me.state)};
+let meBack='s-start';
+$('#b-me').onclick=()=>{meBack='s-start';renderMe();show('s-me')};
+$('#b-me-back').onclick=()=>{if(meBack==='s-board')openBoard();else show('s-start')};
 
 /* ================= networking ================= */
 function openWS(url,ms){
@@ -443,7 +577,8 @@ let hubWS=null,clientWS=null,clientAddr=null,reconnectTimer=0;
 /* ================= HOST ENGINE (runs only on the host phone) ================= */
 const E={players:[],gems:[],setNo:0,setStart:0,active:false,autoDone:false,timers:[],tick:0,running:false,game:0,phase:'lobby',rank:[],tie:false};
 const later=(fn,ms)=>{const t=setTimeout(fn,ms);E.timers.push(t);return t};
-function newPlayer(id,name,kind){return {id,name,kind,score:0,time:0,log:[],gem:null,done:false,last:0,away:false,streak:0,x2:false,shield:0,fifty:0}}
+const FRESH=()=>({score:0,time:0,log:[],gem:null,done:false,last:0,streak:0,x2:false,shield:0,fifty:0,cloud:0,shuffle:0,ice:0,predPts:0,bonus:0,hq:null});
+function newPlayer(id,name,kind){return {id,name,kind,away:false,rv:[],...FRESH()}}
 function hostSend(p,m){
   if(p.kind==='local')ui(m);
   else if(p.kind==='remote'&&!p.away&&hubWS&&hubWS.readyState===1)hubWS.send(JSON.stringify({to:p.id,data:m}));
@@ -456,17 +591,18 @@ function bcast(m){
 /* full picture of the game; sent every second so a phone that missed a message catches up */
 function stateMsg(){
   const m={t:'state',g:E.game,phase:E.phase,n:E.setNo,of:SETS,el:Math.round(performance.now()-E.setStart),
-    gems:E.gems.map(g=>({lane:g.lane,lv:g.lv,cat:g.q[0],mo:g.mo,owner:g.owner,name:(E.players.find(p=>p.id===g.owner)||{}).name||'',gone:!!g.gone})),
+    heist:heistInfo(),
+    gems:E.gems.map(g=>({lane:g.lane,lv:g.lv,cat:g.q[0],qid:g.id,rev:!!g.rev,mo:g.mo,owner:g.owner,name:(E.players.find(p=>p.id===g.owner)||{}).name||'',gone:!!g.gone})),
     players:scoreMsg().players,power:E.power};
   if(E.phase==='end'){m.rank=E.rank;m.tie=E.tie}
   return m;
 }
 function sendState(){if(E.phase&&E.phase!=='lobby')bcast(stateMsg())}
 setInterval(()=>{if(role!=='host'||!hubWS)return;if(E.phase==='lobby')bcast(lobbyMsg());else sendState()},1000);
-function lobbyMsg(){return {t:'lobby',players:E.players.map(p=>({id:p.id,name:p.name,kind:p.kind,away:p.away}))}}
+function lobbyMsg(){return {t:'lobby',subjects,players:E.players.map(p=>({id:p.id,name:p.name,kind:p.kind,away:p.away}))}}
 function scoreMsg(){return {t:'score',players:E.players.map(p=>({id:p.id,name:p.name,score:p.score,log:p.log,away:p.away,
   st:p.away?'offline':!p.gem?'choosing':p.done?'done':'answering '+p.gem.lv,
-  streak:p.streak,x2:p.x2,sh:p.shield,ff:p.fifty}))}}
+  streak:p.streak,x2:p.x2,sh:p.shield,ff:p.fifty,pk:{cloud:p.cloud,shuffle:p.shuffle,ice:p.ice},pp:p.predPts,bn:p.bonus}))}}
 function renderHostList(){
   $('#host-list').innerHTML=E.players.map(p=>`<li><span>${esc(p.name)}${p.kind==='local'?' (you, host)':''}</span><span class="${p.away?'wait':'on'}">${p.away?'Left':'Ready'}</span></li>`).join('')
     +Array.from({length:MAXP-E.players.length},()=>`<li><span class="wait">Empty seat</span><span class="wait">${$('#fill').checked?'Computer':'—'}</span></li>`).join('');
@@ -538,21 +674,41 @@ function stopHosting(){
 function startGameHost(solo){
   E.timers.forEach(clearTimeout);E.timers=[];
   E.players=E.players.filter(p=>p.kind!=='bot'&&!p.away);
-  if(solo||$('#fill').checked){const names=['Asha','Rohan','Meera'].filter(n=>!E.players.some(p=>p.name===n));
+  if(!E.ghost&&(solo||$('#fill').checked)){const names=['Asha','Rohan','Meera'].filter(n=>!E.players.some(p=>p.name===n));
     while(E.players.length<MAXP){const b=newPlayer('bot'+E.players.length,names.shift(),'bot');b.risk=E.players.length%2?.7:.25;E.players.push(b)}}
-  E.players.forEach(p=>Object.assign(p,{score:0,time:0,log:[],gem:null,done:false,last:0,streak:0,x2:false,shield:0,fifty:0}));
+  E.players.forEach(p=>Object.assign(p,FRESH()));
+  const meP=E.players.find(p=>p.kind==='local');if(meP)meP.rv=store.get('gemrush.rv',[]);
+  E.subjects=E.ghost?[]:subjects.slice();E.usedRv=new Set();
   hist.round++;saveHist();E.setNo=0;E.running=true;E.game++;
   bcast(lobbyMsg());nextSet();
 }
 function nextSet(){
   E.setNo++;E.autoDone=false;
-  E.players.forEach(p=>{p.gem=null;p.done=false;p.last=0;p.claimAt=2500+Math.random()*6000;p.target=-1;
+  E.players.forEach(p=>{p.gem=null;p.done=false;p.last=0;p.claimAt=2500+Math.random()*6000;p.target=-1;p.hq=null;
     p.powerAt=p.kind==='bot'&&Math.random()<.45?1800+Math.random()*4000:Infinity});
-  const golden=Math.random()<(params.has('gold')?+params.get('gold'):GOLD_CHANCE);   // rare golden gem replaces the 5-pointer: 10 points, tough question
-  E.gems=LV.map((lv,lane)=>{const {id,q}=pickQ(lv),L=lane===2&&golden?10:lv;return {lv:L,lane,id,q,owner:null,mo:morphPlan(E.setNo,L)}});saveHist();
-  E.power=Math.random()<(params.has('pow')?+params.get('pow'):POWER_CHANCE)?{kind:Math.random()<.5?'shield':'fifty',x:Math.random()<.5?33:67,owner:null,name:''}:null;
+  E.heist=null;E.preds={};
+  const gs=E.ghost&&E.ghost.s[E.setNo-1];
+  if(gs){                                   // ghost race: replay the exact same gems
+    E.gems=gs.g.map((a,lane)=>{const f=qById(a[0])||pickQ(LV[lane]);hist.used[f.id]=hist.round;
+      return {lv:a[1],lane,id:f.id,q:f.q,owner:null,rev:!!a[5],mo:{ph:a[2],per:a[3],rd:a[4]}}});
+    E.power=gs.p?{kind:['shield','fifty','cloud','shuffle','ice'][gs.p[0]]||'shield',x:gs.p[1],owner:null,name:''}:null;
+  }else{
+    const golden=Math.random()<(params.has('gold')?+params.get('gold'):GOLD_CHANCE);   // rare golden gem replaces the 5-pointer: 10 points, tough question
+    E.gems=LV.map((lv,lane)=>{const {id,q}=pickQ(lv,E.subjects),L=lane===2&&golden?10:lv;return {lv:L,lane,id,q,owner:null,mo:morphPlan(E.setNo,L)}});
+    // revenge gem: a question one of the players got wrong in an earlier game comes back with bonus points
+    if(Math.random()<(params.has('rev')?+params.get('rev'):REV_CHANCE)){
+      const ids=shuffle(E.players.flatMap(p=>p.rv||[])).filter(id=>!E.usedRv.has(id));
+      for(const id of ids){const f=qById(id);if(!f)continue;const lane=LV.indexOf(f.lv);
+        if(lane<0||E.gems[lane].lv===10||(E.subjects.length&&!E.subjects.includes(f.q[0])))continue;
+        E.usedRv.add(id);hist.used[id]=hist.round;Object.assign(E.gems[lane],{id,q:f.q,rev:true});break}
+    }
+    const pr=params.has('pow')?+params.get('pow'):POWER_CHANCE,r=Math.random();
+    E.power=Math.random()<pr?{kind:r<.25?'shield':r<.5?'fifty':PRANKS[Math.floor(Math.random()*3)],x:Math.random()<.5?33:67,owner:null,name:''}:null;
+  }
+  saveHist();
+  E.players.forEach(p=>{p.lost=false;p.heistTry=0});
   E.setStart=performance.now();E.active=true;E.phase='play';
-  bcast({t:'set',g:E.game,n:E.setNo,of:SETS,el:0,gems:E.gems.map(g=>({lane:g.lane,lv:g.lv,cat:g.q[0],mo:g.mo})),power:E.power});
+  bcast({t:'set',g:E.game,n:E.setNo,of:SETS,el:0,gems:E.gems.map(g=>({lane:g.lane,lv:g.lv,cat:g.q[0],qid:g.id,rev:!!g.rev,mo:g.mo})),power:E.power});
   sendState();
 }
 function hostTick(){
@@ -560,6 +716,11 @@ function hostTick(){
   const t=performance.now()-E.setStart;
   E.players.forEach(p=>{if(p.kind==='bot'&&!p.gem&&t>p.claimAt)botClaim(p)});
   E.players.forEach(p=>{if(p.kind==='bot'&&t>p.powerAt){p.powerAt=Infinity;claimPower(p)}});
+  const gs=E.ghost&&E.ghost.s[E.setNo-1],gp=E.players.find(p=>p.kind==='ghost');
+  if(gs&&gp&&!gp.gem&&!gp.lost&&gs.c&&t>=gs.c[1]){const g=E.gems[gs.c[0]];if(g&&g.owner===null)claim(gp,gs.c[0],false);else gp.lost=true}
+  const h=E.heist;
+  if(h&&!h.owner&&!h.gone&&t>h.st+HEIST_FALL){h.gone=true;bcast({t:'heistGone',g:E.game,n:E.setNo});sendState();checkSetDone()}
+  E.players.forEach(p=>{if(p.kind==='bot'&&h&&!h.owner&&!h.gone&&p.id!==h.from&&p.heistTry&&t>p.heistTry&&isRound(h.mo,t-250)&&!(p.gem&&!p.done)){p.heistTry=0;claimHeist(p)}});
   if(t>=FALL+250&&!E.autoDone){E.autoDone=true;autoAssign()}
 }
 setInterval(hostTick,100);
@@ -569,14 +730,18 @@ function claim(p,lane,auto){
   g.owner=p.id;p.gem=g;
   bcast({t:'claim',g:E.game,n:E.setNo,lane,id:p.id,name:p.name,auto:!!auto});
   p.shieldOn=false;p.fiftyHide=null;
-  if(p.kind==='bot'){
+  p.qAt=performance.now();botsPredict(p);
+  if(p.kind==='ghost'){
+    const gs=E.ghost.s[E.setNo-1],r=gs.r||[0,-g.lv,QTIME],tt=Math.max(1000,(r[2]||QTIME)*1000+LOCK*1000);
+    later(()=>{if(p.done)return;const ok=!!r[0];record(p,r[1],r[2]||QTIME,false,ok);if(!ok&&g.lv>=5)spawnHeist(g,p)},tt);
+  }else if(p.kind==='bot'){
     let acc={1:.85,3:.62,5:.42,10:.35}[g.lv];const tt=2500+Math.random()*10500;
     if(p.fifty>0&&g.lv>=3){p.fifty--;acc+=(1-acc)/2}
     if(p.shield>0&&g.lv>=5){p.shield--;p.shieldOn=true}
-    later(()=>{if(!p.done)record(p,settle(p,Math.random()<acc),tt/1000)},tt);
+    later(()=>{if(p.done)return;const ok=Math.random()<acc;record(p,settle(p,ok),tt/1000,false,ok);if(!ok&&g.lv>=5)spawnHeist(g,p)},tt);
   }else{
     const opts=g.q.slice(2);p.order=shuffle(opts);p.correct=opts[0];p.qAt=performance.now();
-    p.qMsg={t:'q',g:E.game,n:E.setNo,lane,lv:g.lv,cat:g.q[0],text:g.q[1],opts:p.order,auto:!!auto,x2:p.x2,sh:p.shield,ff:p.fifty};p.resMsg=null;
+    p.qMsg={t:'q',g:E.game,n:E.setNo,lane,id:g.id,rev:!!g.rev,lv:g.lv,cat:g.q[0],text:g.q[1],opts:p.order,auto:!!auto,x2:p.x2,sh:p.shield,ff:p.fifty};p.resMsg=null;
     hostSend(p,p.qMsg);
     p.qTimer=later(()=>answer(p,-1),(QTIME+LOCK)*1000+(p.kind==='remote'?2500:400));
   }
@@ -591,7 +756,7 @@ function botClaim(p){
   if(isRound(g.mo,t-250))claim(p,g.lane,false);    // bots also have to wait for the round shape (with a human-like delay)
 }
 function autoAssign(){
-  E.players.filter(p=>!p.gem&&!p.away).forEach(p=>{const free=E.gems.filter(g=>g.owner===null);
+  E.players.filter(p=>!p.gem&&!p.away&&p.kind!=='ghost').forEach(p=>{const free=E.gems.filter(g=>g.owner===null);
     if(free.length)claim(p,free[Math.floor(Math.random()*free.length)].lane,true)});
   E.gems.filter(g=>g.owner===null).forEach(g=>{g.gone=true;bcast({t:'gone',g:E.game,n:E.setNo,lane:g.lane})});
   sendState();
@@ -600,9 +765,9 @@ function autoAssign(){
 function settle(p,ok){
   const lv=p.gem.lv,wasX2=p.x2;let pts;
   p.x2=false;
-  if(ok){pts=lv*(wasX2?2:1);p.streak++;if(p.streak>=STREAK_N){p.x2=true;p.streak=0}}
+  if(ok){pts=(lv+(p.gem.rev?Math.ceil(lv/2):0))*(wasX2?2:1);p.streak++;if(p.streak>=STREAK_N){p.x2=true;p.streak=0}}
   else{pts=p.shieldOn?0:-lv;p.streak=0}
-  p.lastInfo={x2:wasX2,shielded:!ok&&p.shieldOn,armed:p.x2};
+  p.lastInfo={x2:wasX2,shielded:!ok&&p.shieldOn,armed:p.x2,rev:!!p.gem.rev};
   return pts;
 }
 function answer(p,i){
@@ -614,13 +779,74 @@ function answer(p,i){
   const pts=settle(p,ok);
   p.resMsg={t:'res',g:E.game,n:E.setNo,ok,pts,correct:p.correct,i,...p.lastInfo};
   hostSend(p,p.resMsg);
-  record(p,pts,secs);
+  const g=p.gem;record(p,pts,secs,false,ok);
+  if(!ok&&g.lv>=5)spawnHeist(g,p);
+}
+/* ---------- gem heist: a missed 5 or golden gem drops back down; anyone else can catch it for a free bonus ---------- */
+function heistInfo(){const h=E.heist;return h?{lane:h.lane,lv:h.lv,cat:h.q[0],st:h.st,mo:h.mo,owner:h.owner,name:h.name,gone:h.gone,from:h.from,fromName:h.fromName}:null}
+function spawnHeist(g,loser){
+  if(!E.active||E.heist)return;
+  const st=Math.round(performance.now()-E.setStart),per=2200+Math.floor(Math.random()*500);
+  E.heist={lane:g.lane,lv:g.lv,q:g.q,id:g.id,st,mo:{ph:st+1300+Math.floor(Math.random()*600),per,rd:1000},owner:null,name:'',gone:false,done:false,from:loser.id,fromName:loser.name};
+  E.players.forEach(p=>{if(p.kind==='bot'&&p.id!==loser.id&&Math.random()<.5)p.heistTry=st+1500+Math.random()*4000});
+  bcast({t:'heist',g:E.game,n:E.setNo,h:heistInfo()});sendState();
+}
+function claimHeist(p){
+  const h=E.heist;
+  if(!E.active||!h||h.owner||h.gone||p.id===h.from||p.away||p.kind==='ghost'||(p.gem&&!p.done)){if(p.kind!=='bot')hostSend(p,{t:'nope',lane:'h'});return}
+  h.owner=p.id;h.name=p.name;
+  bcast({t:'heistTaken',g:E.game,n:E.setNo,id:p.id,name:p.name});
+  if(p.kind==='bot'){const acc={5:.42,10:.35}[h.lv]||.4,tt=3000+Math.random()*8000;
+    later(()=>finishHeist(p,Math.random()<acc),tt)}
+  else{const opts=h.q.slice(2),order=shuffle(opts);
+    p.hq={order,correct:opts[0],qAt:performance.now(),done:false,res:null,
+      msg:{t:'q',heist:1,g:E.game,n:E.setNo,lane:'h',id:h.id,lv:h.lv,cat:h.q[0],text:h.q[1],opts:order,sh:0,ff:0}};
+    hostSend(p,p.hq.msg);p.hq.timer=later(()=>answerHeist(p,-1),(QTIME+LOCK)*1000+(p.kind==='remote'?2500:400))}
+  sendState();
+}
+function answerHeist(p,i){
+  const hq=p.hq;if(!hq)return;
+  if(hq.done){if(hq.res)hostSend(p,hq.res);return}
+  clearTimeout(hq.timer);const ok=i>=0&&hq.order[i]===hq.correct;
+  hq.res={t:'res',heist:1,g:E.game,n:E.setNo,ok,pts:ok?E.heist.lv:0,correct:hq.correct,i};hostSend(p,hq.res);
+  finishHeist(p,ok);
+}
+function finishHeist(p,ok){
+  const h=E.heist;if(!h||h.done)return;h.done=true;if(p.hq)p.hq.done=true;
+  if(ok){p.score+=h.lv;p.bonus+=h.lv}
+  bcast({t:'heistDone',g:E.game,n:E.setNo,id:p.id,name:p.name,ok,pts:ok?h.lv:0});sendState();checkSetDone();
+}
+/* ---------- predictions: guess whether someone answering will get it right ---------- */
+function predict(p,targetId,yes){
+  const t=E.players.find(x=>x.id===targetId);
+  if(!E.active||!t||t===p||!t.gem||t.done||performance.now()-t.qAt>PRED_WINDOW)return;
+  const book=E.preds[t.id]=E.preds[t.id]||{};if(p.id in book)return;book[p.id]=!!yes;
+}
+function botsPredict(target){
+  E.players.forEach(b=>{if(b.kind==='bot'&&b!==target&&Math.random()<.5)later(()=>predict(b,target.id,Math.random()<.5),1000+Math.random()*3000)});
+}
+function settlePreds(t,ok){
+  const book=E.preds[t.id];if(!book)return;delete E.preds[t.id];
+  const winners=[],losers=[];
+  for(const id in book){const pr=E.players.find(x=>x.id===id);if(!pr)continue;
+    if(book[id]===ok){pr.score+=1;pr.predPts+=1;winners.push(id)}else losers.push(id)}
+  if(winners.length||losers.length)bcast({t:'predRes',g:E.game,n:E.setNo,target:t.name,ok,winners,losers});
+}
+/* ---------- pranks: send a cloud, shuffle or ice at another player ---------- */
+function prank(p,kind,targetId){
+  const t=E.players.find(x=>x.id===targetId);
+  if(!PRANKS.includes(kind)||!(p[kind]>0)||!t||t===p||t.away||t.kind==='ghost')return;
+  p[kind]--;
+  if(t.kind!=='bot')hostSend(t,{t:'pranked',kind,by:p.name});
+  bcast({t:'prankNote',text:`${p.name} sent ${PK_ICON[kind]} ${PK_NAME[kind]} to ${t.name}!`});sendState();
 }
 /* power-up bubble: first tap wins it */
 function claimPower(p){
   const w=E.power;
   if(!E.active||!w||w.owner||p.away||performance.now()-E.setStart>POWER_FALL+600){if(w&&w.owner&&p.kind!=='bot')hostSend(p,{t:'powerTaken',g:E.game,n:E.setNo,id:w.owner,name:w.name,kind:w.kind});return}
   w.owner=p.id;w.name=p.name;p[w.kind]++;
+  if(p.kind==='bot'&&PRANKS.includes(w.kind)){const targets=E.players.filter(x=>x!==p&&x.kind!=='bot'&&x.kind!=='ghost'&&!x.away);
+    if(targets.length)later(()=>prank(p,w.kind,targets[Math.floor(Math.random()*targets.length)].id),1500+Math.random()*3000)}
   bcast({t:'powerTaken',g:E.game,n:E.setNo,id:p.id,name:p.name,kind:w.kind});sendState();
 }
 /* use Shield or 50:50 on the current question */
@@ -640,22 +866,29 @@ function usePower(p,kind){
 function hostHandle(p,d){
   if(!p||!d)return;
   if(d.t==='claim')claim(p,d.lane,false);
-  else if(d.t==='ans')answer(p,d.i);
+  else if(d.t==='ans'){if(d.h)answerHeist(p,d.i);else answer(p,d.i)}
+  else if(d.t==='heist')claimHeist(p);
+  else if(d.t==='pred')predict(p,d.target,d.yes);
+  else if(d.t==='prank')prank(p,d.kind,d.target);
+  else if(d.t==='rv'){if(Array.isArray(d.ids))p.rv=d.ids.filter(x=>/^(1|3|5)-\d+$/.test(x)).slice(-40)}
   else if(d.t==='power')claimPower(p);
   else if(d.t==='use')usePower(p,d.kind);
+  else if(d.t==='needq'&&d.h){if(p.hq){if(!p.hq.done)hostSend(p,p.hq.msg);else if(p.hq.res)hostSend(p,p.hq.res)}}
   else if(d.t==='needq'){
     if(p.gem&&!p.done&&p.qMsg){hostSend(p,p.qMsg);
       if(p.fiftyHide)hostSend(p,{t:'used',g:E.game,n:E.setNo,kind:'fifty',hide:p.fiftyHide});
       if(p.shieldOn)hostSend(p,{t:'used',g:E.game,n:E.setNo,kind:'shield'})}
     else if(p.resMsg)hostSend(p,p.resMsg)}
 }
-function record(p,pts,secs,silent){
+function record(p,pts,secs,silent,ok){
   if(p.done)return;p.done=true;p.score+=pts;p.time+=secs;p.log.push(pts);p.last=pts;
+  if(ok!==undefined)settlePreds(p,ok);else delete E.preds[p.id];
   sendState();checkSetDone();
 }
 function checkSetDone(){
   if(!E.active)return;
-  const live=E.players.filter(p=>!p.away);
+  const live=E.players.filter(p=>!p.away),h=E.heist;
+  if(h&&!h.gone&&!h.done)return;                     // wait for a dropped gem to be caught and answered, or to fall away
   if(live.every(p=>p.done)||(E.autoDone&&live.every(p=>p.done||!p.gem)))endSet();
 }
 function endSet(){
@@ -668,7 +901,7 @@ function endGame(){
   E.running=false;E.phase='end';
   const rank=[...E.players].sort((a,b)=>b.score-a.score||a.time-b.time);
   E.tie=rank.length>1&&rank[0].score===rank[1].score;
-  E.rank=rank.map(p=>({id:p.id,name:p.name,score:p.score,time:+p.time.toFixed(1),log:p.log}));
+  E.rank=rank.map(p=>({id:p.id,name:p.name,score:p.score,time:+p.time.toFixed(1),log:p.log,pp:p.predPts,bn:p.bonus,kind:p.kind}));
   bcast({t:'end',g:E.game,tie:E.tie,rank:E.rank});
   $('#fresh').textContent=`Unseen questions left: ${LV.map(lv=>`${freshCount(lv)} of ${BANK[lv].length} (${lv}-point)`).join(', ')}. A question doesn't come back for ${NOREPEAT} rounds while unseen ones remain.`;
 }
@@ -797,7 +1030,9 @@ function sendToHost(m){
 }
 
 /* ================= SHARED UI (driven by messages) ================= */
-let view={gems:[],start:0,active:false,pending:-1,mine:false,players:[],game:-1,setNo:-1,ended:-1,answered:false,mineAt:0};
+let view={gems:[],start:0,active:false,pending:-1,mine:false,players:[],game:-1,setNo:-1,ended:-1,answered:false,mineAt:0,heist:null,preds:{},seenAns:{},prankSel:null,rvSent:0};
+let rec=null;        // this phone's own moves, saved as a "ghost" others can race
+let pendingShuffle=false;
 /* bring this phone in line with the host's picture of the game */
 function applyState(m){
   if(m.players){view.players=m.players;renderChips()}
@@ -811,13 +1046,18 @@ function applyState(m){
   m.gems.forEach(s=>{const g=view.gems[s.lane];if(!g)return;
     if(s.owner&&g.owner!==s.owner)onClaimView({lane:s.lane,id:s.owner,name:s.name});
     else if(s.gone&&g.owner===null&&!g.gone)fadeGem(g)});
+  const h=m.heist;
+  if(h&&m.phase==='play'){if(!view.heist&&!h.gone&&!h.owner)makeHeist(h);
+    if(view.heist){if(h.owner&&view.heist.owner!==h.owner)onHeistTaken({id:h.owner,name:h.name});else if(h.gone)heistGone()}
+    if(h.owner===myPid&&!qState&&!view.heistAnswered&&role==='client'&&performance.now()-(view.heistAt||0)>1200)sendToHost({t:'needq',h:1})}
   const mine=m.gems.find(s=>s.owner===myPid);
   if(mine&&m.phase==='play'&&!qState&&!view.answered&&performance.now()-view.mineAt>1200&&role==='client')sendToHost({t:'needq'});
 }
 function ui(m){
   switch(m.t){
     case 'lobby':
-      if(role==='client'){$('#join-wait').hidden=false;joinMsg('');
+      if(role==='client'){$('#join-wait').hidden=false;joinMsg('');$('#join-subj').textContent='Subjects: '+subjText(m.subjects);
+        if(performance.now()-view.rvSent>5000&&m.players.some(x=>x.id===myPid)){view.rvSent=performance.now();sendToHost({t:'rv',ids:store.get('gemrush.rv',[])})}
         $('#join-list').innerHTML=m.players.map(p=>`<li><span>${esc(p.name)}${p.id===myPid?' (you)':''}</span><span class="on">${p.kind==='local'?'Host':'Ready'}</span></li>`).join('');}
       break;
     case 'full':joinMsg('This room already has 3 players.',true);leaveClient();break;
@@ -825,13 +1065,20 @@ function ui(m){
     case 'sync':show('game');status('Back in! You\'ll play from the next set.');break;
     case 'set':if(m.g!==view.game||m.n!==view.setNo)startSetView(m);break;
     case 'claim':if(m.g===view.game&&m.n===view.setNo)onClaimView(m);break;
-    case 'nope':if(view.pending===m.lane)view.pending=-1;break;
+    case 'nope':if(m.lane==='h'){if(view.heist)view.heist.pending=false}else if(view.pending===m.lane)view.pending=-1;break;
     case 'gone':{if(m.g!==view.game||m.n!==view.setNo)break;const g=view.gems[m.lane];if(g&&g.owner===null)fadeGem(g);break}
     case 'q':if(m.g===view.game&&m.n===view.setNo&&!(qState&&qState.lane===m.lane))openQ(m);break;
     case 'res':showRes(m);break;
     case 'state':applyState(m);break;
     case 'powerTaken':if(m.g===view.game&&m.n===view.setNo)onPowerView(m);break;
     case 'used':onUsed(m);break;
+    case 'heist':if(m.g===view.game&&m.n===view.setNo&&!view.heist)makeHeist(m.h);break;
+    case 'heistTaken':if(m.g===view.game&&m.n===view.setNo)onHeistTaken(m);break;
+    case 'heistGone':if(m.g===view.game&&m.n===view.setNo)heistGone();break;
+    case 'heistDone':if(m.g===view.game&&m.n===view.setNo&&m.id!==myPid)status(m.ok?`💰 ${m.name} cashed the dropped gem: +${m.pts}!`:`${m.name} missed the dropped gem`);break;
+    case 'predRes':onPredRes(m);break;
+    case 'pranked':onPranked(m);break;
+    case 'prankNote':status(m.text);SFX.play('taken');break;
     case 'score':view.players=m.players;renderChips();break;
     case 'setEnd':onSetEnd(m);break;
     case 'end':if(view.ended!==m.g){view.ended=m.g;onEnd(m)}break;
@@ -840,16 +1087,17 @@ function ui(m){
 function status(t){$('#status').textContent=t;$('#status').hidden=!t}
 function startSetView(m){
   show('game');$('#qmodal').hidden=true;
-  view.gems.forEach(g=>g.el.remove());if(view.power&&view.power.el)view.power.el.remove();
+  view.gems.forEach(g=>g.el.remove());if(view.power&&view.power.el)view.power.el.remove();if(view.heist&&view.heist.el)view.heist.el.remove();
+  view.heist=null;view.heistAnswered=false;view.preds={};view.seenAns={};$('#predbox').innerHTML='';
   if(qState){clearInterval(qState.iv);clearTimeout(qState.retry);qState=null}
   view={...view,active:true,pending:-1,mine:false,answered:false,mineAt:0,game:m.g,setNo:m.n,start:performance.now()-(m.el||0)};
   tilt.base=tilt.beta;tilt.lane=-1;aim(-1);
   $('#setno').textContent=`Set ${m.n} of ${m.of}`;
   view.gems=m.gems.map(d=>{
     const el=document.createElement('div');
-    el.className='gem lv'+d.lv;el.style.left=((d.lane*2+1)/6*100)+'%';
+    el.className='gem lv'+d.lv+(d.rev?' rev':'');el.style.left=((d.lane*2+1)/6*100)+'%';
     el.innerHTML=`<div class="tail"></div><div class="shape"><div class="dia">${gemSVG(d.lv)}</div><div class="orb">${orbSVG(d.lv)}<i class="ringfx"></i></div></div><div class="hint"></div><div class="tag"></div>`;
-    el.querySelector('.hint').textContent=d.cat;
+    el.querySelector('.hint').textContent=(d.rev?'🔁 ':'')+d.cat;
     const g={...d,el,taps:0,win:null,owner:null,gone:false,round:false};
     el.addEventListener('pointerdown',e=>{e.preventDefault();tapGem(g)});
     el.style.transform='translate(-50%,-150px)';sky.appendChild(el);return g;
@@ -858,13 +1106,17 @@ function startSetView(m){
   view.power=null;if(m.power)makePower(m.power);
   SFX.play(g5.lv===10?'golden':'set');
   view.frozenUntil=0;view.misses=[];sky.classList.remove('frozen');
+  if(m.n===1||!rec||rec.game!==m.g)rec={game:m.g,s:[]};
+  if(!rec.s[m.n-1])rec.s[m.n-1]={g:m.gems.map(d=>[d.qid,d.lv,d.mo.ph,d.mo.per,d.mo.rd,d.rev?1:0]),
+    p:m.power?[['shield','fifty','cloud','shuffle','ice'].indexOf(m.power.kind),m.power.x]:0,c:null,r:null};
+  if(m.gems.some(d=>d.rev))setTimeout(()=>{if(view.setNo===m.n&&!view.mine)status('🔁 Red revenge gem! Get it right for bonus')},1800);
   status(g5.lv===10?'✨ Golden 10 gem! It stays round only briefly':'Grab a gem when it turns round: tap 3 times'+(tilt.seen?' or tilt':''));
 }
-const PW_ICON={shield:'<svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5z" fill="#fff"/><path d="M8.5 12l2.5 2.5 4.5-5" stroke="#5b3bd6" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',fifty:'50:50'};
+const PW_ICON={cloud:'<b style="font-size:28px">☁️</b>',shuffle:'<b style="font-size:28px">🔀</b>',ice:'<b style="font-size:28px">🧊</b>',shield:'<svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5z" fill="#fff"/><path d="M8.5 12l2.5 2.5 4.5-5" stroke="#5b3bd6" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',fifty:'50:50'};
 function makePower(d){
   const el=document.createElement('div');el.className='pw';el.style.left=d.x+'%';
   el.innerHTML=PW_ICON[d.kind]+'<div class="tag"></div>';
-  el.setAttribute('aria-label',d.kind==='shield'?'Shield power-up':'50:50 power-up');
+  el.setAttribute('aria-label',PK_NAME[d.kind]+' power-up');
   const w=view.power={...d,el,owner:d.owner||null,gone:false,pending:false};
   el.addEventListener('pointerdown',e=>{e.preventDefault();if(!view.active||w.owner||w.pending||w.gone)return;w.pending=true;SFX.play('tap');sendToHost({t:'power'})});
   el.style.transform='translateY(-80px)';sky.appendChild(el);
@@ -873,7 +1125,7 @@ function makePower(d){
 function onPowerView(m){
   const w=view.power;if(!w||w.done)return;w.owner=m.id;w.pending=false;w.done=true;
   if(m.id===myPid){SFX.play('power');buzz(40);w.el.classList.add('fade');setTimeout(()=>w.el.remove(),400);
-    status(m.kind==='shield'?'🛡️ You got a Shield! Use it on your next question.':'✂️ You got 50:50! Use it on your next question.')}
+    status(m.kind==='shield'?'🛡️ You got a Shield! Use it on your next question.':m.kind==='fifty'?'✂️ You got 50:50! Use it on your next question.':`${PK_ICON[m.kind]} You got a ${PK_NAME[m.kind]} prank! Tap it at the top to send it.`)}
   else{w.el.classList.add('taken');w.el.querySelector('.tag').textContent=m.name+' got it';setTimeout(()=>{w.el.classList.add('fade');setTimeout(()=>w.el.remove(),500)},900)}
 }
 function tapGem(g){
@@ -894,7 +1146,8 @@ function tapGem(g){
 }
 function onClaimView(m){
   const g=view.gems[m.lane];if(!g)return;g.owner=m.id;
-  if(m.id===myPid){view.mine=true;view.mineAt=performance.now();view.pending=-1;aim(-1);buzz(40);SFX.play('shatter');shatter(g)}
+  if(m.id===myPid){view.mine=true;view.mineAt=performance.now();view.pending=-1;aim(-1);buzz(40);SFX.play('shatter');shatter(g);
+    const rs=rec&&rec.s[view.setNo-1];if(rs&&!rs.c)rs.c=[m.lane,Math.round(performance.now()-view.start)]}
   else{SFX.play('taken');
     if(view.pending===m.lane)view.pending=-1;
     g.el.classList.add('taken');g.el.querySelector('.tag').textContent=m.name+' took it';
@@ -924,6 +1177,10 @@ function frame(){
   const w=view.power;
   if(w&&!w.done){if(t>POWER_FALL){w.done=true;w.el.classList.add('fade');setTimeout(()=>w.el.remove(),500)}
     else w.el.style.transform=`translateY(${-80+(t/POWER_FALL)*(H+40)}px)`}
+  const h=view.heist;
+  if(h&&!h.gone){const ht=t-h.st,end=H-h.el.offsetHeight-30;
+    h.el.style.transform=`translate(-50%,${-150+Math.min(ht/HEIST_FALL,1)*(end+150)}px)`;
+    const r=!h.owner&&!h.mineLost&&isRound(h.mo,t);if(r!==h.round){h.round=r;h.el.classList.toggle('round',r);if(!r&&h.taps){h.taps=0;h.el.classList.remove('t1','t2')}}}
   if(!view.mine&&view.pending<0&&tilt.seen)checkTilt();
 }
 requestAnimationFrame(frame);
@@ -940,12 +1197,81 @@ function checkTilt(){
 addEventListener('keydown',e=>{const lane={ArrowLeft:0,ArrowUp:1,ArrowRight:2}[e.key];const g=view.gems[lane];
   if(g&&view.active&&!view.mine&&view.pending<0&&g.owner===null&&isRound(g.mo,performance.now()-view.start)){view.pending=lane;sendToHost({t:'claim',lane})}});
 
+/* ---------- dropped gem (heist) ---------- */
+function makeHeist(d){
+  if(!d||view.heist)return;
+  const el=document.createElement('div');el.className='gem heist lv'+d.lv;el.style.left=((d.lane*2+1)/6*100)+'%';
+  el.innerHTML=`<div class="tail"></div><div class="shape"><div class="dia">${gemSVG(d.lv)}</div><div class="orb">${orbSVG(d.lv)}<i class="ringfx"></i></div></div><div class="hint"></div><div class="tag"></div>`;
+  const mineLost=d.from===myPid;
+  el.querySelector('.hint').textContent=mineLost?'Dropped!':'💰 Free catch';
+  const h=view.heist={...d,el,taps:0,win:null,owner:null,gone:false,round:false,pending:false,mineLost};
+  el.addEventListener('pointerdown',e=>{e.preventDefault();tapHeist(h)});
+  el.style.transform='translate(-50%,-150px)';sky.appendChild(el);
+  status(mineLost?'Your gem dropped back down! Others can catch it now':`💰 ${d.fromName} missed! Catch the dropped gem when it's round: win +${d.lv}, lose nothing`);
+  SFX.play('golden');
+}
+function tapHeist(h){
+  if(!view.active||h.owner||h.gone||h.pending||h.mineLost||qState)return;
+  const now=performance.now(),t=now-view.start;
+  if(view.frozenUntil>now)return;
+  if(!isRound(h.mo,t)){h.taps=0;h.el.classList.remove('t1','t2');SFX.play('bonk');status('Wait till it turns round!');return}
+  const w=roundWin(h.mo,t);if(h.win!==w){h.win=w;h.taps=0;h.el.classList.remove('t1','t2')}
+  h.taps++;SFX.play('tap');buzz(12);
+  if(h.taps<TAPS)h.el.classList.add('t'+h.taps);else{h.pending=true;sendToHost({t:'heist'})}
+}
+function onHeistTaken(m){
+  const h=view.heist;if(!h||h.owner)return;h.owner=m.id;h.pending=false;
+  if(m.id===myPid){view.heistAt=performance.now();SFX.play('shatter');shatter(h)}
+  else{h.el.classList.add('taken');h.el.querySelector('.tag').textContent=m.name+' caught it';setTimeout(()=>fadeGem(h),900)}
+}
+function heistGone(){const h=view.heist;if(h&&!h.gone&&!h.owner)fadeGem(h)}
+
+/* ---------- predictions ---------- */
+function renderPreds(){
+  const box=$('#predbox');if(!view.active){box.innerHTML='';return}
+  const now=performance.now();
+  const rows=view.players.filter(p=>p.id!==myPid&&p.st&&p.st.startsWith('answering')).map(p=>{
+    view.seenAns[p.id]=view.seenAns[p.id]||now;
+    const lv=p.st.split(' ')[1],mine=view.preds[p.id];
+    if(mine===undefined&&now-view.seenAns[p.id]>PRED_WINDOW-1500)return '';
+    return `<div class="pred" data-id="${esc(p.id)}"><span>${mine===undefined?`Will ${esc(p.name)} get the ${lv} right?`:`You said ${mine?'👍':'👎'} for ${esc(p.name)}`}</span>${mine===undefined?'<button data-y="1" aria-label="Yes">👍</button><button data-y="0" aria-label="No">👎</button>':''}</div>`}).join('');
+  if(box.dataset.html!==rows){box.innerHTML=rows;box.dataset.html=rows}
+}
+$('#predbox').onclick=e=>{const b=e.target.closest('button');if(!b)return;const id=b.closest('.pred').dataset.id,yes=b.dataset.y==='1';
+  view.preds[id]=yes;SFX.play('tap');sendToHost({t:'pred',target:id,yes});renderPreds()};
+setInterval(renderPreds,500);
+function onPredRes(m){
+  if(m.winners.includes(myPid)){status(`🎯 Good guess about ${m.target}! +1`);SFX.play('power')}
+  else if(m.losers.includes(myPid))status(`Wrong guess about ${m.target}`);
+}
+
+/* ---------- pranks ---------- */
+function renderPrankbar(){
+  const meP=view.players.find(p=>p.id===myPid),bar=$('#prankbar');
+  const own=meP&&meP.pk?PRANKS.filter(k=>meP.pk[k]>0):[];
+  if(!own.length||!view.active){bar.hidden=true;bar.innerHTML='';view.prankSel=null;return}
+  if(view.prankSel&&!own.includes(view.prankSel))view.prankSel=null;
+  bar.hidden=false;
+  const html=own.map(k=>`<button data-k="${k}" class="${view.prankSel===k?'sel':''}">${PK_ICON[k]} ${PK_NAME[k]}${meP.pk[k]>1?' ×'+meP.pk[k]:''}</button>`).join('')+(view.prankSel?'<div class="hintp">Now tap a player above to send it</div>':'');
+  if(bar.dataset.html!==html){bar.innerHTML=html;bar.dataset.html=html}
+}
+$('#prankbar').onclick=e=>{const b=e.target.closest('button');if(!b)return;view.prankSel=view.prankSel===b.dataset.k?null:b.dataset.k;renderChips()};
+$('#chips').onclick=e=>{const c=e.target.closest('.chip');if(!c||!view.prankSel||!c.dataset.id||c.dataset.id===myPid)return;
+  sendToHost({t:'prank',kind:view.prankSel,target:c.dataset.id});view.prankSel=null;SFX.play('tap');renderChips()};
+function onPranked(m){
+  buzz(60);SFX.play('bonk');
+  if(m.kind==='cloud'){$('#cloudfx').hidden=false;setTimeout(()=>$('#cloudfx').hidden=true,2500);status(`☁️ ${m.by} covered your screen with a cloud!`)}
+  else if(m.kind==='ice'){view.frozenUntil=performance.now()+3000;sky.classList.add('frozen');status(`🧊 ${m.by} froze you for 3 seconds!`)}
+  else if(m.kind==='shuffle'){status(`🔀 ${m.by} shuffled your answers!`);if(qState&&!qState.over)shuffleOpts();else pendingShuffle=true}
+}
+function shuffleOpts(){const kids=[...$('#qopts').children];shuffle(kids.map((_,i)=>i)).forEach((o,i)=>kids[i].style.order=o);$('#qopts').style.display='flex';$('#qopts').style.flexDirection='column'}
+
 /* question card: options stay locked for 0.8 s so a fast 4th tap can't answer by accident */
 let qState=null;
 function openQ(m){
   if(qState)clearInterval(qState.iv);
   const bd=$('#qbadge');bd.textContent=(m.lv===10?'✨ ':'')+m.lv+(m.lv>1?' points':' point');bd.className='badge lv'+m.lv;
-  $('#qcat').innerHTML='';$('#qcat').textContent=(m.auto?'Auto-assigned · ':'')+m.cat+' ';
+  $('#qcat').innerHTML='';$('#qcat').textContent=(m.heist?'💰 Free catch · ':m.rev?'🔁 Revenge (bonus) · ':m.auto?'Auto-assigned · ':'')+m.cat+' ';
   if(m.x2){const x=document.createElement('span');x.className='xb';x.textContent='🔥 ×2';$('#qcat').appendChild(x)}
   const row=$('#pwrow'),bs=$('#b-shield'),bf=$('#b-fifty');
   bs.hidden=!(m.sh>0);bf.hidden=!(m.ff>0);row.hidden=bs.hidden&&bf.hidden;
@@ -953,14 +1279,15 @@ function openQ(m){
   bs.textContent='🛡️ Shield'+(m.sh>1?` (${m.sh})`:'');bf.textContent='✂️ 50:50'+(m.ff>1?` (${m.ff})`:'');
   $('#qtext').textContent=m.text;
   const box=$('#qopts');
-  box.innerHTML=m.opts.map((_,i)=>`<button class="opt" data-i="${i}"><b>${'ABCD'[i]}</b><span></span></button>`).join('');
+  box.innerHTML=m.opts.map((_,i)=>`<button class="opt" data-i="${i}"><b>${'ABCD'[i]}</b><span></span></button>`).join('');box.style.display='';
   [...box.children].forEach((b,i)=>b.lastChild.textContent=m.opts[i]);
   box.classList.add('lock');
   const fd=$('#qfeed');fd.textContent='Get ready…';fd.className='feed';
   $('#qmodal').hidden=false;
-  const q=qState={over:false,opts:m.opts,lv:m.lv,iv:0,t0:0,lane:m.lane,retry:0,lastTick:99};
+  const q=qState={over:false,opts:m.opts,lv:m.lv,iv:0,t0:0,lane:m.lane,retry:0,lastTick:99,heist:!!m.heist,id:m.id,cat:m.cat};
   ring(QTIME);
   setTimeout(()=>{if(q!==qState||q.over)return;box.classList.remove('lock');fd.textContent='';q.t0=performance.now();
+    if(pendingShuffle){pendingShuffle=false;shuffleOpts()}
     q.iv=setInterval(()=>{const left=QTIME-(performance.now()-q.t0)/1000;ring(left);
       const sec=Math.ceil(left);if(sec<=5&&sec>0&&sec<q.lastTick){q.lastTick=sec;SFX.play('tick')}
       if(left<=0)pick(-1)},100)},LOCK*1000);
@@ -980,8 +1307,9 @@ function pick(i){
   const q=qState;if(!q||q.over)return;q.over=true;clearInterval(q.iv);
   [...$('#qopts').children].forEach((b,k)=>{b.disabled=true;if(k===i)b.style.borderColor='var(--gold)'});
   $('#qfeed').textContent=i<0?'Time up…':'Checking…';
-  view.answered=true;sendToHost({t:'ans',i});
-  let tries=0;const again=()=>{if(qState!==q||q.got||role!=='client'||tries++>=4)return;sendToHost({t:'ans',i});q.retry=setTimeout(again,2000)};
+  if(q.heist)view.heistAnswered=true;else view.answered=true;
+  const msg={t:'ans',i,h:q.heist?1:0};sendToHost(msg);
+  let tries=0;const again=()=>{if(qState!==q||q.got||role!=='client'||tries++>=4)return;sendToHost(msg);q.retry=setTimeout(again,2000)};
   q.retry=setTimeout(again,2000);
 }
 function showRes(m){
@@ -989,7 +1317,11 @@ function showRes(m){
   [...$('#qopts').children].forEach((b,k)=>{b.disabled=true;b.style.borderColor='';
     if(q&&q.opts[k]===m.correct)b.classList.add('right');else if(k===m.i)b.classList.add('wrong')});
   const fd=$('#qfeed'),v=Math.abs(m.pts);
-  fd.textContent=m.ok?`Correct · +${v}${m.x2?' (🔥 double!)':''}`:m.shielded?`${m.i<0?'Time up':'Wrong'} · 🛡️ Shield saved you: 0`:`${m.i<0?'Time up':'Wrong'} · −${v}`;
+  if(m.heist)fd.textContent=m.ok?`💰 Free catch cashed · +${v}`:`${m.i<0?'Time up':'Wrong'} · no points lost`;
+  else fd.textContent=m.ok?`Correct · +${v}${m.x2?' (🔥 double!)':''}${m.rev?' (🔁 revenge bonus!)':''}`:m.shielded?`${m.i<0?'Time up':'Wrong'} · 🛡️ Shield saved you: 0`:`${m.i<0?'Time up':'Wrong'} · −${v}`;
+  if(m.ok&&q.cat)addGem(q.cat);
+  if(q.id){let rv=store.get('gemrush.rv',[]).filter(x=>x!==q.id);if(!m.ok)rv.push(q.id);store.set('gemrush.rv',rv.slice(-40))}
+  if(!m.heist){const rs=rec&&rec.s[view.setNo-1];if(rs&&!rs.r)rs.r=[m.ok?1:0,m.pts,q.t0?+Math.min((performance.now()-q.t0)/1000,QTIME).toFixed(1):QTIME]}
   if(m.armed)fd.textContent+=' · 🔥 3 in a row! Next gem ×2';
   fd.className='feed '+(m.ok?'good':'bad');buzz(m.ok?30:[60,40,60]);
   SFX.play(m.ok?'right':m.shielded?'shielded':'wrong');if(m.armed)setTimeout(()=>SFX.play('streak'),350);
@@ -998,7 +1330,10 @@ function showRes(m){
 function renderChips(){
   $('#chips').innerHTML=view.players.map(p=>{
     const dots=Array.from({length:SETS},(_,i)=>{const v=p.log[i];return `<i class="${v===undefined?'':v>0?'up':v<0?'dn':'z'}"></i>`}).join('');
-    return `<div class="chip${p.id===myPid?' me':''}"><div class="nm">${esc(p.name)}</div><div class="sc">${p.score}</div><div class="st">${p.st}</div><div class="pu">${p.x2?'🔥×2 ':p.streak?'🔥'+p.streak+' ':''}${'🛡️'.repeat(Math.min(p.sh||0,3))}${p.ff?'✂️'.repeat(Math.min(p.ff,3)):''}</div><div class="dots">${dots}</div></div>`}).join('');
+    const pk=p.pk?PRANKS.map(k=>PK_ICON[k].repeat(Math.min(p.pk[k]||0,2))).join(''):'';
+    const tgt=view.prankSel&&p.id!==myPid&&!p.name.startsWith('👻');
+    return `<div class="chip${p.id===myPid?' me':''}${tgt?' target':''}" data-id="${esc(p.id)}"><div class="nm">${esc(p.name)}</div><div class="sc">${p.score}</div><div class="st">${p.st}</div><div class="pu">${p.x2?'🔥×2 ':p.streak?'🔥'+p.streak+' ':''}${'🛡️'.repeat(Math.min(p.sh||0,3))}${p.ff?'✂️'.repeat(Math.min(p.ff,3)):''}${pk}</div><div class="dots">${dots}</div></div>`}).join('');
+  renderPrankbar();
   const me=view.players.find(p=>p.id===myPid);
   if(me&&me.st==='done'){const w=view.players.filter(p=>p.st.startsWith('answering')||p.st==='choosing').map(p=>p.name);if(w.length)status(`Waiting for ${w.join(' and ')}…`)}
 }
@@ -1011,24 +1346,108 @@ function onSetEnd(m){
 }
 function onEnd(m){
   view.gems.forEach(g=>g.el.remove());view.gems=[];view.active=false;show('s-end');
-  const top=m.rank[0];
-  $('#winner').textContent=top.id===myPid?'You win!':`${top.name} wins`;SFX.play(top.id===myPid?'win':'lose');
+  const top=m.rank[0],ghostGame=m.rank.some(p=>p.kind==='ghost');
+  $('#winner').textContent=ghostGame?(top.id===myPid?'You beat the ghost! 👻':'The ghost wins 👻'):top.id===myPid?'You win!':`${top.name} wins`;SFX.play(top.id===myPid?'win':'lose');
   $('#tienote').textContent=m.tie?'Tied on points, so the faster total answer time wins.':'Highest score wins. A tie goes to the faster player.';
-  $('#rank').innerHTML=m.rank.map((p,i)=>`<li class="${p.id===myPid?'me':''}"><span class="pos">${i+1}</span><span class="who">${esc(p.name)} · ${p.time} s</span><span class="log">${p.log.map(v=>`<i class="${v>0?'up':v<0?'dn':'z'}">${sign(v)}</i>`).join('')}</span><span class="tot">${p.score}</span></li>`).join('');
+  $('#rank').innerHTML=m.rank.map((p,i)=>`<li class="${p.id===myPid?'me':''}"><span class="pos">${i+1}</span><span class="who">${esc(p.name)} · ${p.time} s</span><span class="log">${p.log.map(v=>`<i class="${v>0?'up':v<0?'dn':'z'}">${sign(v)}</i>`).join('')}${p.pp?`<i class="up">🎯+${p.pp}</i>`:''}${p.bn?`<i class="up">💰+${p.bn}</i>`:''}</span><span class="tot">${p.score}</span></li>`).join('');
   const host=role==='host';
-  $('#b-again').hidden=!host;$('#bankinfo').hidden=!host;$('#end-wait').hidden=host;
+  $('#b-again').hidden=!host;$('#b-again').textContent=ghostGame?'Race the ghost again':'Play again';
+  $('#bankinfo').hidden=!host;$('#end-wait').hidden=host;
+  const mine=m.rank.find(p=>p.id===myPid);
+  if(mine){lbQueue(mine.score);$('#lb-note').textContent=`🏆 This game counts on the weekly leaderboard as ${me.fun}.`}
+  // ghost link: your moves this game, for a friend to race
+  const sets=rec&&rec.game===m.g?rec.s.filter(Boolean):[];
+  $('#ghost-share').hidden=!(mine&&sets.length===SETS);
+  if(mine&&sets.length===SETS){
+    const url=ghostURL({v:1,n:myName(),sc:mine.score,s:sets});
+    $('#b-gwa').href='https://wa.me/?text='+encodeURIComponent(`👻 I scored ${mine.score} in Gem Rush. Can you beat my ghost? ${url}`);
+    $('#b-gcopy').onclick=async()=>{try{await navigator.clipboard.writeText(url);$('#b-gcopy').textContent='Copied!'}catch(e){$('#b-gcopy').textContent='Copy failed'}setTimeout(()=>$('#b-gcopy').textContent='Copy link',1800)};
+  }
 }
 
+/* ================= ghost race links ================= */
+const b64u=str=>btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const unb64u=str=>decodeURIComponent(escape(atob(str.replace(/-/g,'+').replace(/_/g,'/'))));
+const ghostURL=d=>(location.protocol.startsWith('http')?location.origin+location.pathname:SITE+'/play/')+'#ghost-'+b64u(JSON.stringify(d));
+function decodeGhost(code){
+  const d=JSON.parse(unb64u(code));
+  if(!d||d.v!==1||!Array.isArray(d.s)||!d.s.length||d.s.length>SETS)return null;
+  d.n=String(d.n||'Friend').replace(/[<>]/g,'').slice(0,12);d.sc=Math.max(-200,Math.min(200,+d.sc||0));
+  for(const x of d.s){if(!Array.isArray(x.g)||x.g.length!==3)return null;
+    for(const a of x.g){if(!qById(a[0])||![1,3,5,10].includes(a[1])||!(a[3]>0)||!(a[4]>0))return null}
+    if(x.c&&!(x.c[0]>=0&&x.c[0]<=2&&x.c[1]>=0))x.c=null}
+  return d;
+}
+let pendingGhost=null;
+function hashGhost(){
+  const mm=/^#ghost-([A-Za-z0-9_-]+)$/.exec(location.hash);if(!mm||role)return;
+  let d=null;try{d=decodeGhost(mm[1])}catch(e){}
+  if(!d){show('s-start');return}
+  pendingGhost=d;
+  $('#gh-title').textContent=`${d.n} challenges you!`;
+  $('#gh-sub').textContent=`${d.n} scored ${d.sc}. You'll play the very same gems, and ${d.n}'s ghost grabs at the exact moments they did. Beat ${d.sc} to win!`;
+  $('#gname').value=$('#name').value;show('s-ghost');
+}
+$('#b-ghost-go').onclick=()=>{
+  if(!pendingGhost)return;$('#name').value=$('#gname').value;myName();
+  role='host';E.ghost=pendingGhost;
+  E.players=[newPlayer(myPid,myName(),'local'),newPlayer('ghost','👻 '+pendingGhost.n.slice(0,10),'ghost')];
+  startGameHost(false);
+};
+$('#b-ghost-back').onclick=()=>{pendingGhost=null;clearHash();show('s-start')};
+function clearHash(){try{if(/^#(ghost|join)-/.test(location.hash))history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
+
+/* ================= weekly leaderboard ================= */
+const tier=p=>p>=400?['Diamond','t-d']:p>=150?['Gold','t-g']:p>=50?['Silver','t-s']:['Bronze','t-b'];
+function lbQueue(score){const q=store.get('gemrush.lbq',[]);q.push({sc:score,ts:Date.now()});store.set('gemrush.lbq',q.slice(-20));lbFlush()}
+let lbBusy=false;
+async function lbFlush(){
+  if(lbBusy)return;let q=store.get('gemrush.lbq',[]);if(!q.length)return;
+  let c;try{c=sbClient()}catch(e){return}
+  lbBusy=true;
+  try{while(q.length){const {error}=await c.rpc('gr_submit',{p_pid:myPid,p_name:me.fun,p_state:me.state||null,p_score:q[0].sc});
+    if(error)break;q.shift();store.set('gemrush.lbq',q)}}catch(e){}
+  lbBusy=false;
+}
+let lbTab='p';
+async function openBoard(){
+  show('s-board');$('#lb-list').innerHTML='';$('#lb-me').innerHTML='';$('#lb-msg').textContent='Loading…';
+  $('#tab-p').setAttribute('aria-pressed',lbTab==='p');$('#tab-s').setAttribute('aria-pressed',lbTab==='s');
+  let c;try{c=sbClient()}catch(e){$('#lb-msg').textContent='The leaderboard needs internet.';return}
+  await lbFlush();
+  try{
+    if(lbTab==='p'){
+      const {data,error}=await c.rpc('gr_board',{p_pid:myPid});if(error)throw error;
+      const top=(data&&data.top)||[];
+      $('#lb-msg').textContent=top.length?'':'No scores yet this week. Play a game to be first!';
+      $('#lb-list').innerHTML=top.map((r,i)=>{const t=tier(r.points);return `<li class="${r.name===me.fun?'me':''}"><span class="r">${i+1}</span><span class="n">${esc(r.name)}<span class="tier ${t[1]}">${t[0]}</span><small>${esc(r.state||'')}</small></span><span class="pt">${r.points}</span></li>`}).join('');
+      const mm=data&&data.me;
+      $('#lb-me').innerHTML=mm?`<b>You: ${esc(me.fun)}</b><br>Rank ${mm.rank} · ${mm.points} points this week · ${tier(mm.points)[0]} league`:`<b>You: ${esc(me.fun)}</b><br>Play a game this week to get on the board.`;
+    }else{
+      const {data,error}=await c.rpc('gr_states');if(error)throw error;
+      const rows=data||[];
+      $('#lb-msg').textContent=rows.length?'':'No states yet this week. Pick your state in My gems and play!';
+      $('#lb-list').innerHTML=rows.map((r,i)=>`<li class="${r.state===me.state?'me':''}"><span class="r">${i+1}</span><span class="n">${esc(r.state)}<small>${r.players} player${r.players>1?'s':''}</small></span><span class="pt">${r.points}</span></li>`).join('');
+      $('#lb-me').innerHTML=me.state?`Your state: <b>${esc(me.state)}</b>`:'You haven\'t picked a state yet.';
+    }
+  }catch(e){$('#lb-msg').textContent='Could not load the leaderboard right now. Try again in a minute.'}
+}
+$('#b-board').onclick=()=>openBoard();
+$('#tab-p').onclick=()=>{lbTab='p';openBoard()};$('#tab-s').onclick=()=>{lbTab='s';openBoard()};
+$('#b-board-back').onclick=()=>show('s-start');
+$('#b-board-me').onclick=()=>{meBack='s-board';renderMe();show('s-me')};
+setTimeout(lbFlush,3000);
+
 /* ================= buttons ================= */
-$('#b-host').onclick=()=>{myName();startHosting()};
-$('#b-online').onclick=()=>{myName();hostOnline()};
-$('#b-solo').onclick=()=>{myName();role='host';E.players=[newPlayer(myPid,myName(),'local')];startGameHost(true)};
+$('#b-host').onclick=()=>{myName();E.ghost=null;startHosting()};
+$('#b-online').onclick=()=>{myName();E.ghost=null;hostOnline()};
+$('#b-solo').onclick=()=>{myName();E.ghost=null;role='host';E.players=[newPlayer(myPid,myName(),'local')];startGameHost(true)};
 $('#b-join').onclick=()=>{myName();show('s-join');joinMsg('');$('#join-wait').hidden=true};
 $('#b-start').onclick=()=>startGameHost(false);
 $('#b-again').onclick=()=>startGameHost(!hubWS);
 $('#b-host-back').onclick=()=>{stopHosting();show('s-start')};
 $('#b-join-back').onclick=()=>{leaveClient();show('s-start')};
-$('#b-home').onclick=()=>{if(role==='host')stopHosting();else leaveClient();show('s-start')};
+$('#b-home').onclick=()=>{if(role==='host')stopHosting();else leaveClient();E.ghost=null;pendingGhost=null;clearHash();show('s-start')};
 if(params.get('join')){show('s-join');$('#addr').value=params.get('join')}
 if(!NATIVE&&!/android-app/.test(location.search))$('#getapp').hidden=false;
 function hashJoin(){
@@ -1037,6 +1456,7 @@ function hashJoin(){
   joinMsg("Type your name and tap Join to enter room "+hj[1].toUpperCase()+".");$("#join-spin").hidden=true;
 }
 hashJoin();addEventListener('hashchange',hashJoin);
+hashGhost();addEventListener('hashchange',hashGhost);
 if(params.get('name'))$('#name').value=params.get('name');
 }
 </script>
