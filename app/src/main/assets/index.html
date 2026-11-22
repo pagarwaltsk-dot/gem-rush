@@ -220,7 +220,7 @@ select{width:100%;min-height:48px;border-radius:14px;border:2px solid var(--line
         <li>Gems keep changing shape as they fall. Grab one <b>only while it's round</b>: tap it 3 times, or tilt your phone (left = 1, back = 3, right = 5). Tapping a diamond resets it, and tapping wildly freezes you for a second!</li>
         <li>Once a gem is taken, nobody else can have it. Answer within 15 seconds.</li>
         <li>Right answer: + points. Wrong or time up: − points. 5 sets per game.</li>
-        <li>Look out for the rare golden 10 gem, and grab the purple bubbles: 🛡️ Shield (a wrong answer costs nothing), ✂️ 50:50, and pranks to send at others: ☁️ Cloud, 🔀 Shuffle, 🧊 Ice. Three right in a row makes your next gem worth double!</li>
+        <li>Every game has one golden 10 gem, so watch for it! Grab the purple bubbles: 🛡️ Shield (a wrong answer costs nothing), ✂️ 50:50, and pranks to send at others: ☁️ Cloud, 🔀 Shuffle, 🧊 Ice. Three right in a row makes your next gem worth double!</li>
         <li>🔁 Red revenge gems bring back questions someone got wrong before, with bonus points. If someone misses a 5 or golden gem, it drops back down: catch it for a free bonus! While others answer, guess 👍/👎 whether they'll get it right for +1.</li>
       </ol>
     </div>
@@ -381,7 +381,7 @@ select{width:100%;min-height:48px;border-radius:14px;border:2px solid var(--line
 /* online play: Supabase project (Project Settings > API) */
 const SB_URL='https://ydqktuggkxbtwinafitj.supabase.co',SB_KEY='sb_publishable_W658Rj1N9u5TxX-dh1tODA_gtTtZgdB';
 const SITE='https://gem-rush.in';
-const GOLD_CHANCE=.15,POWER_CHANCE=.4,POWER_FALL=8000,STREAK_N=3,REV_CHANCE=.35,HEIST_FALL=8000,PRED_WINDOW=9000;
+const POWER_CHANCE=.4,POWER_FALL=8000,STREAK_N=3,REV_CHANCE=.35,HEIST_FALL=8000,PRED_WINDOW=9000;
 const PRANKS=['cloud','shuffle','ice'],PK_ICON={cloud:'☁️',shuffle:'🔀',ice:'🧊',shield:'🛡️',fifty:'✂️'},PK_NAME={cloud:'Cloud',shuffle:'Shuffle',ice:'Ice',shield:'Shield',fifty:'50:50'};
 /* shape-changing gems: a gem can be grabbed only while it is round.
    m = {ph: offset ms, per: cycle ms, rd: round ms}; t = ms since the set started */
@@ -679,7 +679,7 @@ function startGameHost(solo){
   E.players.forEach(p=>Object.assign(p,FRESH()));
   const meP=E.players.find(p=>p.kind==='local');if(meP)meP.rv=store.get('gemrush.rv',[]);
   E.subjects=E.ghost?[]:subjects.slice();E.usedRv=new Set();
-  hist.round++;saveHist();E.setNo=0;E.running=true;E.game++;
+  hist.round++;saveHist();E.setNo=0;E.running=true;E.game++;E.goldSet=1+Math.floor(Math.random()*SETS);
   bcast(lobbyMsg());nextSet();
 }
 function nextSet(){
@@ -693,7 +693,8 @@ function nextSet(){
       return {lv:a[1],lane,id:f.id,q:f.q,owner:null,rev:!!a[5],mo:{ph:a[2],per:a[3],rd:a[4]}}});
     E.power=gs.p?{kind:['shield','fifty','cloud','shuffle','ice'][gs.p[0]]||'shield',x:gs.p[1],owner:null,name:''}:null;
   }else{
-    const golden=Math.random()<(params.has('gold')?+params.get('gold'):GOLD_CHANCE);   // rare golden gem replaces the 5-pointer: 10 points, tough question
+    // exactly one golden 10 gem per game, in a random set; it replaces that set's 5-pointer
+    const golden=params.has('gold')?Math.random()<+params.get('gold'):E.setNo===E.goldSet;
     E.gems=LV.map((lv,lane)=>{const {id,q}=pickQ(lv,E.subjects),L=lane===2&&golden?10:lv;return {lv:L,lane,id,q,owner:null,mo:morphPlan(E.setNo,L)}});
     // revenge gem: a question one of the players got wrong in an earlier game comes back with bonus points
     if(Math.random()<(params.has('rev')?+params.get('rev'):REV_CHANCE)){
